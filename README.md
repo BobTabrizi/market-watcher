@@ -1,2 +1,2 @@
-# Example
-An example greeter plugin
+# Market Watcher Plugin
+Watches Market Prices of items.
