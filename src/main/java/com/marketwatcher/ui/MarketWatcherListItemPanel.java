@@ -5,6 +5,7 @@ import com.marketwatcher.data.MarketWatcherList;
 import com.marketwatcher.data.MarketWatcherItem;
 
 import static com.marketwatcher.ui.Constants.*;
+import static com.marketwatcher.utilities.PanelUtils.createRightPanel;
 
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ImageUtil;
@@ -47,7 +48,7 @@ public class MarketWatcherListItemPanel extends JPanel {
         int itemIndex = tab.getItems().indexOf(item);
         int itemsSize = tab.getItems().size();
 
-        JPanel rightPanel = plugin.createRightPanel(item, COMPACT);
+        JPanel rightPanel = createRightPanel(item, COMPACT);
 
         // Action Panel (Delete, Shift item)
         JPanel actionPanel = new JPanel(new BorderLayout());

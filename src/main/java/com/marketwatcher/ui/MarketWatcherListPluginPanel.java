@@ -124,7 +124,8 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
 
         title.setText(PANEL_TITLE);
         title.setForeground(Color.WHITE);
-        title.setBorder(new EmptyBorder(0, 0, 10, 0));
+        title.setBorder(new EmptyBorder(0, 0, 0, 0));
+        title.setPreferredSize(new Dimension(100, 10));
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 3));
 
@@ -193,8 +194,9 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
         });
         actions.add(cancelItem);
 
-        titlePanel.add(title, BorderLayout.WEST);
-        titlePanel.add(actions, BorderLayout.EAST);
+        titlePanel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        titlePanel.add(title, BorderLayout.LINE_START);
+        titlePanel.add(actions, BorderLayout.LINE_END);
 
         value.setForeground(new Color(255, 202, 36));
         value.setBorder(new EmptyBorder(0, 0, 5, 0));
@@ -293,7 +295,6 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
     private void switchToSearch() {
         actionPanel.setVisible(false);
         cancelItem.setVisible(true);
-        System.out.println(searchPanel);
         centerCard.show(centerPanel, SEARCH_PANEL);
     }
 
