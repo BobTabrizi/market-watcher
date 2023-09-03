@@ -7,7 +7,7 @@ import java.util.List;
 
 @AllArgsConstructor
 @Getter
-public class MarketWatcherListData {
+public class MarketWatcherTabData {
     private String name;
     private boolean collapsed;
     private List<Integer> items;

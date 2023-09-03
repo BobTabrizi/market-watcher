@@ -3,8 +3,8 @@ package com.marketwatcher.ui;
 import com.marketwatcher.data.MarketWatcherItem;
 import com.marketwatcher.MarketWatcherPlugin;
 
-import static com.marketwatcher.ui.Constants.GP;
-import static com.marketwatcher.ui.Constants.NOT_AVAILABLE;
+import static com.marketwatcher.utilities.Constants.GP;
+import static com.marketwatcher.utilities.Constants.NOT_AVAILABLE;
 
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.QuantityFormatter;
@@ -22,10 +22,10 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MarketWatcherListResultPanel extends JPanel {
+public class MarketWatcherTabResultPanel extends JPanel {
     private static final Dimension IMAGE_SIZE = new Dimension(32, 32);
 
-    MarketWatcherListResultPanel(MarketWatcherPlugin plugin, MarketWatcherItem item) {
+    MarketWatcherTabResultPanel(MarketWatcherPlugin plugin, MarketWatcherItem item) {
         setLayout(new BorderLayout(5, 0));
         setToolTipText(item.getName());
         setBackground(ColorScheme.DARKER_GRAY_COLOR);

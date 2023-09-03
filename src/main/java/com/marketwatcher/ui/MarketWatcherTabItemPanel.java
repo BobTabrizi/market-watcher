@@ -1,10 +1,10 @@
 package com.marketwatcher.ui;
 
 import com.marketwatcher.MarketWatcherPlugin;
-import com.marketwatcher.data.MarketWatcherList;
+import com.marketwatcher.data.MarketWatcherTab;
 import com.marketwatcher.data.MarketWatcherItem;
 
-import static com.marketwatcher.ui.Constants.*;
+import static com.marketwatcher.utilities.Constants.*;
 import static com.marketwatcher.utilities.PanelUtils.createRightPanel;
 
 import net.runelite.client.ui.ColorScheme;
@@ -17,7 +17,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 
-public class MarketWatcherListItemPanel extends JPanel {
+public class MarketWatcherTabItemPanel extends JPanel {
     private static final String REMOVE_TITLE = "Warning";
     private static final String REMOVE_MESSAGE = "Are you sure you want to remove this item from the tab?";
     private static final ImageIcon REMOVE_ICON;
@@ -28,7 +28,7 @@ public class MarketWatcherListItemPanel extends JPanel {
     private static final ImageIcon SHIFT_DOWN_HOVER_ICON;
 
     static {
-        final BufferedImage removeImage = ImageUtil.loadImageResource(MarketWatcherListPluginPanel.class, DELETE_ICON_PATH);
+        final BufferedImage removeImage = ImageUtil.loadImageResource(MarketWatcherTabPluginPanel.class, DELETE_ICON_PATH);
         REMOVE_ICON = new ImageIcon(removeImage);
         REMOVE_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(removeImage, 0.53f));
 
@@ -41,7 +41,7 @@ public class MarketWatcherListItemPanel extends JPanel {
         SHIFT_DOWN_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(shiftDownImage, 0.53f));
     }
 
-    MarketWatcherListItemPanel(MarketWatcherPlugin plugin, MarketWatcherList tab, MarketWatcherItem item) {
+    MarketWatcherTabItemPanel(MarketWatcherPlugin plugin, MarketWatcherTab tab, MarketWatcherItem item) {
         setLayout(new BorderLayout(5, 0));
         setBorder(new EmptyBorder(5, 0, 5, 0));
 

@@ -7,7 +7,7 @@ import lombok.Setter;
 import java.util.List;
 
 @AllArgsConstructor
-public class MarketWatcherList {
+public class MarketWatcherTab {
     @Getter
     @Setter
     private String name;
@@ -19,7 +19,7 @@ public class MarketWatcherList {
     @Getter
     private final List<MarketWatcherItem> items;
 
-    public MarketWatcherList(String name, List<MarketWatcherItem> items) {
+    public MarketWatcherTab(String name, List<MarketWatcherItem> items) {
         this.name = name;
         collapsed = false;
         this.items = items;
@@ -27,11 +27,11 @@ public class MarketWatcherList {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof MarketWatcherList)) {
+        if (!(obj instanceof MarketWatcherTab)) {
             return false;
         }
 
-        final MarketWatcherList group = (MarketWatcherList) obj;
-        return group.getName().equals(this.name);
+        final MarketWatcherTab tab = (MarketWatcherTab) obj;
+        return tab.getName().equals(this.name);
     }
 }

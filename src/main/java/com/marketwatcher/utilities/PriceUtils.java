@@ -1,8 +1,12 @@
 package com.marketwatcher.utilities;
 
-import java.text.DecimalFormat;
+import com.marketwatcher.data.MarketWatcherItem;
+import net.runelite.client.util.AsyncBufferedImage;
 
-import static com.marketwatcher.ui.Constants.*;
+import java.text.DecimalFormat;
+import java.util.Map;
+
+import static com.marketwatcher.utilities.Constants.*;
 
 public final class PriceUtils {
 
@@ -129,4 +133,36 @@ public final class PriceUtils {
         }
         return price;
     }
+
+    public static MarketWatcherItem createMarketWatchItemWithPriceMap(AsyncBufferedImage itemImage, String itemName, int itemId, int itemPrice, Map<String, String> itemPriceMap) {
+        String oneWeekLow = NOT_AVAILABLE;
+        String oneWeekMed = NOT_AVAILABLE;
+        String oneWeekHigh = NOT_AVAILABLE;
+
+        String oneMonthLow = NOT_AVAILABLE;
+        String oneMonthMed = NOT_AVAILABLE;
+        String oneMonthHigh = NOT_AVAILABLE;
+
+        String threeMonthLow = NOT_AVAILABLE;
+        String threeMonthMed = NOT_AVAILABLE;
+        String threeMonthHigh = NOT_AVAILABLE;
+
+        if (itemPriceMap != null) {
+            oneWeekLow = itemPriceMap.get(ONE_WEEK_LOW) != null ? itemPriceMap.get(ONE_WEEK_LOW) : NOT_AVAILABLE;
+            oneWeekMed = itemPriceMap.get(ONE_WEEK_MED) != null ? itemPriceMap.get(ONE_WEEK_MED) : NOT_AVAILABLE;
+            oneWeekHigh = itemPriceMap.get(ONE_WEEK_HIGH) != null ? itemPriceMap.get(ONE_WEEK_HIGH) : NOT_AVAILABLE;
+
+            oneMonthLow = itemPriceMap.get(ONE_MONTH_LOW) != null ? itemPriceMap.get(ONE_MONTH_LOW) : NOT_AVAILABLE;
+            oneMonthMed = itemPriceMap.get(ONE_MONTH_MED) != null ? itemPriceMap.get(ONE_MONTH_MED) : NOT_AVAILABLE;
+            oneMonthHigh = itemPriceMap.get(ONE_MONTH_HIGH) != null ? itemPriceMap.get(ONE_MONTH_HIGH) : NOT_AVAILABLE;
+
+            threeMonthLow = itemPriceMap.get(THREE_MONTHS_LOW) != null ? itemPriceMap.get(THREE_MONTHS_LOW) : NOT_AVAILABLE;
+            threeMonthMed = itemPriceMap.get(THREE_MONTHS_MED) != null ? itemPriceMap.get(THREE_MONTHS_MED) : NOT_AVAILABLE;
+            threeMonthHigh = itemPriceMap.get(THREE_MONTHS_HIGH) != null ? itemPriceMap.get(THREE_MONTHS_HIGH) : NOT_AVAILABLE;
+        }
+
+        return new MarketWatcherItem(itemImage, itemName, itemId, itemPrice, oneWeekLow, oneWeekMed, oneWeekHigh, oneMonthLow, oneMonthMed, oneMonthHigh, threeMonthLow, threeMonthMed, threeMonthHigh);
+    }
+
+
 }

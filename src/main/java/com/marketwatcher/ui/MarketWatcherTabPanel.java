@@ -1,10 +1,10 @@
 package com.marketwatcher.ui;
 
 import com.marketwatcher.MarketWatcherPlugin;
-import com.marketwatcher.data.MarketWatcherList;
+import com.marketwatcher.data.MarketWatcherTab;
 import com.marketwatcher.data.MarketWatcherItem;
 
-import static com.marketwatcher.ui.Constants.*;
+import static com.marketwatcher.utilities.Constants.*;
 
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ImageUtil;
@@ -32,7 +32,7 @@ import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.List;
 
-public class MarketWatcherListPanel extends JPanel {
+public class MarketWatcherTabPanel extends JPanel {
     private static final String DELETE_TITLE = "Delete Tab";
     private static final String DELETE_MESSAGE = "Are you sure you want to delete this tab? This will not delete the items.";
     private static final ImageIcon ADD_ICON;
@@ -63,7 +63,7 @@ public class MarketWatcherListPanel extends JPanel {
         UNCOLLAPSED_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(uncollapsedImage, 0.53f));
     }
 
-    MarketWatcherListPanel(MarketWatcherPlugin plugin, MarketWatcherListPluginPanel panel, MarketWatcherList tab) {
+    MarketWatcherTabPanel(MarketWatcherPlugin plugin, MarketWatcherTabPluginPanel panel, MarketWatcherTab tab) {
         setLayout(new BorderLayout(5, 0));
         setBorder(new EmptyBorder(5, 5, 5, 0));
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -100,19 +100,19 @@ public class MarketWatcherListPanel extends JPanel {
         JPanel leftActions = new JPanel(new BorderLayout());
         leftActions.setOpaque(false);
 
-        // Group Name
-        JLabel groupName = new JLabel();
-        groupName.setForeground(Color.WHITE);
-        groupName.setBorder(new EmptyBorder(0, 5, 0, 0));
-        groupName.setPreferredSize(new Dimension(140, 0));
-        groupName.setText(tab.getName());
+        // Tab Name
+        JLabel tabName = new JLabel();
+        tabName.setForeground(Color.WHITE);
+        tabName.setBorder(new EmptyBorder(0, 5, 0, 0));
+        tabName.setPreferredSize(new Dimension(140, 0));
+        tabName.setText(tab.getName());
 
         // Collapse
         JLabel collapseButton = new JLabel();
         collapseButton.setOpaque(false);
 
         if (collapsed) {
-            groupName.setPreferredSize(new Dimension(160, 0));
+            tabName.setPreferredSize(new Dimension(160, 0));
 
             collapseButton.setIcon(COLLAPSED_ICON);
             collapseButton.addMouseListener(new MouseAdapter() {
@@ -132,7 +132,7 @@ public class MarketWatcherListPanel extends JPanel {
                 }
             });
 
-            leftActions.add(groupName, BorderLayout.EAST);
+            leftActions.add(tabName, BorderLayout.EAST);
             leftActions.add(collapseButton, BorderLayout.WEST);
             topPanel.add(leftActions, BorderLayout.WEST);
 
@@ -156,7 +156,7 @@ public class MarketWatcherListPanel extends JPanel {
                 }
             });
 
-            leftActions.add(groupName, BorderLayout.EAST);
+            leftActions.add(tabName, BorderLayout.EAST);
             leftActions.add(collapseButton, BorderLayout.WEST);
 
             topPanel.add(leftActions, BorderLayout.WEST);
@@ -242,7 +242,7 @@ public class MarketWatcherListPanel extends JPanel {
 
             int index = 0;
             for (MarketWatcherItem item : tab.getItems()) {
-                MarketWatcherListItemPanel itemPanel = new MarketWatcherListItemPanel(plugin, tab, item);
+                MarketWatcherTabItemPanel itemPanel = new MarketWatcherTabItemPanel(plugin, tab, item);
 
                 if (index++ > 0) {
                     itemsPanel.add(createMarginWrapper(itemPanel), constraints);

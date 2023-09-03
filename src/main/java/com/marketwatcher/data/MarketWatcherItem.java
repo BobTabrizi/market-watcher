@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-import static com.marketwatcher.ui.Constants.NOT_AVAILABLE;
+import static com.marketwatcher.utilities.Constants.NOT_AVAILABLE;
 
 import net.runelite.client.util.AsyncBufferedImage;
 

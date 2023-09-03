@@ -4,8 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.marketwatcher.MarketWatcherPlugin;
 
-import static com.marketwatcher.ui.Constants.CONFIG_TAB;
-
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -17,10 +15,13 @@ import javax.inject.Inject;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import static com.marketwatcher.utilities.Constants.*;
+import static com.marketwatcher.utilities.PriceUtils.createMarketWatchItemWithPriceMap;
 
 @Slf4j
-public class MarketWatcherListDataManager {
-    private static final String CONFIG_KEY_VALUE = "value";
+public class MarketWatcherTabDataManager {
     private static final String CONFIG_KEY_ITEMIDS = "itemIds";
     private static final String CONFIG_KEY_TABS = "tabs";
     private static final String LOAD_ITEM_ERROR = "Exception occurred while loading items";
@@ -36,12 +37,12 @@ public class MarketWatcherListDataManager {
     private final Type itemsType = new TypeToken<ArrayList<Integer>>() {
     }.getType();
 
-    private List<MarketWatcherListData> tabs = new ArrayList<>();
-    private final Type tabsType = new TypeToken<ArrayList<MarketWatcherListData>>() {
+    private List<MarketWatcherTabData> tabs = new ArrayList<>();
+    private final Type tabsType = new TypeToken<ArrayList<MarketWatcherTabData>>() {
     }.getType();
 
     @Inject
-    public MarketWatcherListDataManager(MarketWatcherPlugin plugin, Client client, ConfigManager configManager, ItemManager itemManager, Gson gson) {
+    public MarketWatcherTabDataManager(MarketWatcherPlugin plugin, Client client, ConfigManager configManager, ItemManager itemManager, Gson gson) {
         this.plugin = plugin;
         this.client = client;
         this.configManager = configManager;
@@ -54,10 +55,6 @@ public class MarketWatcherListDataManager {
         if (client.getGameState().getState() < GameState.LOGIN_SCREEN.getState()) {
             return false;
         }
-
-        // Value
-        String value = configManager.getConfiguration(CONFIG_TAB, CONFIG_KEY_VALUE);
-        plugin.setValue(Long.parseLong(value));
 
         // Individual Items
         itemIds.clear();
@@ -96,9 +93,6 @@ public class MarketWatcherListDataManager {
     }
 
     public void saveData() {
-        // Value
-        configManager.setConfiguration(CONFIG_TAB, CONFIG_KEY_VALUE, String.valueOf(plugin.getValue()));
-
         // Individual Items
         itemIds.clear();
 
@@ -112,13 +106,13 @@ public class MarketWatcherListDataManager {
         // Tabs and their items
         tabs.clear();
 
-        for (MarketWatcherList group : plugin.getTabs()) {
-            List<Integer> groupItems = new ArrayList<>();
-            for (MarketWatcherItem item : group.getItems()) {
-                groupItems.add(item.getItemId());
+        for (MarketWatcherTab tab : plugin.getTabs()) {
+            List<Integer> tabItems = new ArrayList<>();
+            for (MarketWatcherItem item : tab.getItems()) {
+                tabItems.add(item.getItemId());
             }
 
-            tabs.add(new MarketWatcherListData(group.getName(), group.isCollapsed(), groupItems));
+            tabs.add(new MarketWatcherTabData(tab.getName(), tab.isCollapsed(), tabItems));
         }
 
         final String tabsJson = gson.toJson(tabs);
@@ -136,15 +130,15 @@ public class MarketWatcherListDataManager {
     }
 
     private void convertTabs() {
-        List<MarketWatcherList> watchTabs = new ArrayList<>();
+        List<MarketWatcherTab> watchTabs = new ArrayList<>();
 
-        for (MarketWatcherListData tab : tabs) {
+        for (MarketWatcherTabData tab : tabs) {
             List<MarketWatcherItem> tabItems = new ArrayList<>();
             for (Integer itemId : tab.getItems()) {
                 tabItems.add(convertIdToItem(itemId));
             }
 
-            watchTabs.add(new MarketWatcherList(tab.getName(), tab.isCollapsed(), tabItems));
+            watchTabs.add(new MarketWatcherTab(tab.getName(), tab.isCollapsed(), tabItems));
         }
 
         plugin.setTabs(watchTabs);
@@ -153,6 +147,8 @@ public class MarketWatcherListDataManager {
     private MarketWatcherItem convertIdToItem(int itemId) {
         AsyncBufferedImage itemImage = itemManager.getImage(itemId);
         String itemName = itemManager.getItemComposition(itemId).getName();
-        return new MarketWatcherItem(itemImage, itemName, itemId, 0, null, null, null, null, null, null, null, null, null); // Item prices updated after load
+        Map<String, String> itemPriceMap = plugin.getItemPriceMap().get(itemId);
+
+        return createMarketWatchItemWithPriceMap(itemImage, itemName, itemId, 0, itemPriceMap);
     }
 }

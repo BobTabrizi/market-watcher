@@ -3,9 +3,10 @@ package com.marketwatcher.ui;
 import com.google.common.base.Strings;
 import com.marketwatcher.MarketWatcherPlugin;
 import com.marketwatcher.data.MarketWatcherItem;
-import com.marketwatcher.data.MarketWatcherList;
+import com.marketwatcher.data.MarketWatcherTab;
 
-import static com.marketwatcher.ui.Constants.*;
+import static com.marketwatcher.utilities.Constants.*;
+import static com.marketwatcher.utilities.PriceUtils.createMarketWatchItemWithPriceMap;
 
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.RuneLiteConfig;
@@ -39,7 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class MarketWatcherListPluginPanel extends PluginPanel {
+public class MarketWatcherTabPluginPanel extends PluginPanel {
     private final MarketWatcherPlugin plugin;
     private final ClientThread clientThread;
     private final RuneLiteConfig runeLiteConfig;
@@ -77,14 +78,14 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
     private final CardLayout searchCard = new CardLayout();
 
     private final JPanel centerPanel = new JPanel(centerCard);
-    private final JPanel marketWatchPanel = new JPanel(new BorderLayout());
+    private final JPanel marketWatcherPanel = new JPanel(new BorderLayout());
     private final JPanel valuePanel = new JPanel(new BorderLayout());
     private final JLabel value = new JLabel();
     private final JPanel titlePanel = new JPanel(new BorderLayout());
     private final JPanel searchPanel = new JPanel(new BorderLayout());
     private final JPanel searchCenterPanel = new JPanel(searchCard);
     private final JPanel searchResultsPanel = new JPanel();
-    private final JPanel marketWatchItemsPanel = new JPanel();
+    private final JPanel marketWatcherItemsPanel = new JPanel();
     private final IconTextField searchBar = new IconTextField();
     private final PluginErrorPanel searchErrorPanel = new PluginErrorPanel();
     private final GridBagConstraints constraints = new GridBagConstraints();
@@ -96,22 +97,22 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
     private final List<MarketWatcherItem> searchItems = new ArrayList<>();
 
     static {
-        final BufferedImage addImage = ImageUtil.loadImageResource(MarketWatcherListPluginPanel.class, ADD_ICON_PATH);
+        final BufferedImage addImage = ImageUtil.loadImageResource(MarketWatcherTabPluginPanel.class, ADD_ICON_PATH);
         ADD_ICON = new ImageIcon(addImage);
         ADD_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(addImage, 0.53f));
 
-        final BufferedImage addTabImage = ImageUtil.loadImageResource(MarketWatcherListPluginPanel.class, ADD_TAB_ICON_PATH);
+        final BufferedImage addTabImage = ImageUtil.loadImageResource(MarketWatcherTabPluginPanel.class, ADD_TAB_ICON_PATH);
         ADD_TAB_ICON = new ImageIcon(addTabImage);
         ADD_TAB_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(addTabImage, 0.53f));
 
-        final BufferedImage cancelImage = ImageUtil.loadImageResource(MarketWatcherListPluginPanel.class, CANCEL_ICON_PATH);
+        final BufferedImage cancelImage = ImageUtil.loadImageResource(MarketWatcherTabPluginPanel.class, CANCEL_ICON_PATH);
         CANCEL_ICON = new ImageIcon(cancelImage);
         CANCEL_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(cancelImage, 0.53f));
     }
 
 
     @Inject
-    MarketWatcherListPluginPanel(MarketWatcherPlugin plugin, ClientThread clientThread, RuneLiteConfig runeLiteConfig, ItemManager itemManager) throws IOException {
+    MarketWatcherTabPluginPanel(MarketWatcherPlugin plugin, ClientThread clientThread, RuneLiteConfig runeLiteConfig, ItemManager itemManager) throws IOException {
         super(false);
         this.plugin = plugin;
         this.clientThread = clientThread;
@@ -205,10 +206,10 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
         valuePanel.add(value, BorderLayout.WEST);
 
         // Market Watch Items Panel
-        marketWatchItemsPanel.setLayout(new GridBagLayout());
+        marketWatcherItemsPanel.setLayout(new GridBagLayout());
 
         JPanel pWrapper = new JPanel(new BorderLayout());
-        pWrapper.add(marketWatchItemsPanel, BorderLayout.NORTH);
+        pWrapper.add(marketWatcherItemsPanel, BorderLayout.NORTH);
 
         JScrollPane marketWrapper = new JScrollPane(pWrapper);
         marketWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -217,8 +218,8 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
         marketWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(5, 5, 0, 0));
 
         // Market Watch Panel
-        marketWatchPanel.add(valuePanel, BorderLayout.NORTH);
-        marketWatchPanel.add(marketWrapper, BorderLayout.CENTER);
+        marketWatcherPanel.add(valuePanel, BorderLayout.NORTH);
+        marketWatcherPanel.add(marketWrapper, BorderLayout.CENTER);
 
         // Search Results Panel
         searchResultsPanel.setLayout(new GridBagLayout());
@@ -277,7 +278,7 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
         searchPanel.add(searchCenterPanel, BorderLayout.CENTER);
 
         // Center Panel
-        centerPanel.add(marketWatchPanel, MARKET_WATCH_PANEL);
+        centerPanel.add(marketWatcherPanel, MARKET_WATCH_PANEL);
         centerPanel.add(searchPanel, SEARCH_PANEL);
         centerCard.show(centerPanel, MARKET_WATCH_PANEL);
 
@@ -337,35 +338,11 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
             AsyncBufferedImage itemImage = itemManager.getImage(itemId);
             int itemPrice = useActivelyTradedPrice ? itemManager.getWikiPrice(item) : item.getPrice();
 
-            Map<String, String> itemDetailsMap = plugin.getItemStatsMap().get(itemId);
+            Map<String, String> itemPriceMap = plugin.getItemPriceMap().get(itemId);
 
-            String oneWeekLow = NOT_AVAILABLE;
-            String oneWeekMed = NOT_AVAILABLE;
-            String oneWeekHigh = NOT_AVAILABLE;
+            MarketWatcherItem resultItem = createMarketWatchItemWithPriceMap(itemImage, item.getName(), itemId, itemPrice, itemPriceMap);
 
-            String oneMonthLow = NOT_AVAILABLE;
-            String oneMonthMed = NOT_AVAILABLE;
-            String oneMonthHigh = NOT_AVAILABLE;
-
-            String threeMonthLow = NOT_AVAILABLE;
-            String threeMonthMed = NOT_AVAILABLE;
-            String threeMonthHigh = NOT_AVAILABLE;
-
-            if (itemDetailsMap != null) {
-                oneWeekLow = itemDetailsMap.get(ONE_WEEK_LOW) != null ? itemDetailsMap.get(ONE_WEEK_LOW) : NOT_AVAILABLE;
-                oneWeekMed = itemDetailsMap.get(ONE_WEEK_MED) != null ? itemDetailsMap.get(ONE_WEEK_MED) : NOT_AVAILABLE;
-                oneWeekHigh = itemDetailsMap.get(ONE_WEEK_HIGH) != null ? itemDetailsMap.get(ONE_WEEK_HIGH) : NOT_AVAILABLE;
-
-                oneMonthLow = itemDetailsMap.get(ONE_MONTH_LOW) != null ? itemDetailsMap.get(ONE_MONTH_LOW) : NOT_AVAILABLE;
-                oneMonthMed = itemDetailsMap.get(ONE_MONTH_MED) != null ? itemDetailsMap.get(ONE_MONTH_MED) : NOT_AVAILABLE;
-                oneMonthHigh = itemDetailsMap.get(ONE_MONTH_HIGH) != null ? itemDetailsMap.get(ONE_MONTH_HIGH) : NOT_AVAILABLE;
-
-                threeMonthLow = itemDetailsMap.get(THREE_MONTHS_LOW) != null ? itemDetailsMap.get(THREE_MONTHS_LOW) : NOT_AVAILABLE;
-                threeMonthMed = itemDetailsMap.get(THREE_MONTHS_MED) != null ? itemDetailsMap.get(THREE_MONTHS_MED) : NOT_AVAILABLE;
-                threeMonthHigh = itemDetailsMap.get(THREE_MONTHS_HIGH) != null ? itemDetailsMap.get(THREE_MONTHS_HIGH) : NOT_AVAILABLE;
-            }
-
-            searchItems.add(new MarketWatcherItem(itemImage, item.getName(), itemId, itemPrice, oneWeekLow, oneWeekMed, oneWeekHigh, oneMonthLow, oneMonthMed, oneMonthHigh, threeMonthLow, threeMonthMed, threeMonthHigh));
+            searchItems.add(resultItem);
         }
 
         // Add each item in list to panel
@@ -373,7 +350,7 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
         {
             int index = 0;
             for (MarketWatcherItem item : searchItems) {
-                MarketWatcherListResultPanel panel = new MarketWatcherListResultPanel(plugin, item);
+                MarketWatcherTabResultPanel panel = new MarketWatcherTabResultPanel(plugin, item);
 
                 if (index++ > 0) {
                     searchResultsPanel.add(createMarginWrapper(panel), constraints);
@@ -389,20 +366,20 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
     }
 
     public void updateMarketWatchPanel() {
-        marketWatchItemsPanel.removeAll();
+        marketWatcherItemsPanel.removeAll();
 
         constraints.gridy++;
 
         int index = 0;
 
         // Tabs
-        for (MarketWatcherList tab : plugin.getTabs()) {
-            MarketWatcherListPanel panel = new MarketWatcherListPanel(plugin, this, tab);
+        for (MarketWatcherTab tab : plugin.getTabs()) {
+            MarketWatcherTabPanel panel = new MarketWatcherTabPanel(plugin, this, tab);
 
             if (index++ > 0) {
-                marketWatchItemsPanel.add(createMarginWrapper(panel), constraints);
+                marketWatcherItemsPanel.add(createMarginWrapper(panel), constraints);
             } else {
-                marketWatchItemsPanel.add(panel, constraints);
+                marketWatcherItemsPanel.add(panel, constraints);
             }
 
             constraints.gridy++;
@@ -413,9 +390,9 @@ public class MarketWatcherListPluginPanel extends PluginPanel {
             MarketWatcherItemPanel panel = new MarketWatcherItemPanel(plugin, item);
 
             if (index++ > 0) {
-                marketWatchItemsPanel.add(createMarginWrapper(panel), constraints);
+                marketWatcherItemsPanel.add(createMarginWrapper(panel), constraints);
             } else {
-                marketWatchItemsPanel.add(panel, constraints);
+                marketWatcherItemsPanel.add(panel, constraints);
             }
 
             constraints.gridy++;

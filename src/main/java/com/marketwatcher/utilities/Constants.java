@@ -1,4 +1,4 @@
-package com.marketwatcher.ui;
+package com.marketwatcher.utilities;
 
 public final class Constants {
     private Constants() {

@@ -7,8 +7,8 @@ import net.runelite.client.util.QuantityFormatter;
 import javax.swing.*;
 import java.awt.*;
 
-import static com.marketwatcher.ui.Constants.*;
-import static com.marketwatcher.ui.Constants.STANDARD;
+import static com.marketwatcher.utilities.Constants.*;
+import static com.marketwatcher.utilities.Constants.STANDARD;
 import static com.marketwatcher.utilities.PriceUtils.manageItemPrices;
 
 public final class PanelUtils {
@@ -77,7 +77,8 @@ public final class PanelUtils {
         JLabel timeType = new JLabel();
 
         timeType.setForeground(Color.WHITE);
-        timeType.setText("W:");
+        timeType.setText("1W:");
+        timeType.setToolTipText("1 Week");
         rightPanel.add(timeType, getGbc(gbc, 0, 2, 1, 1, 0, 0, new Insets(5, 0, topBottomInset, 0)));
 
         JLabel lowWeekPrice = new JLabel();
@@ -104,6 +105,7 @@ public final class PanelUtils {
 
         timeType2.setForeground(Color.WHITE);
         timeType2.setText("1M:");
+        timeType2.setToolTipText("1 Month");
         rightPanel.add(timeType2, getGbc(gbc, 0, 3, 1, 1, 0, 0, new Insets(topBottomInset, 0, topBottomInset, 0)));
 
         JLabel lowMonthPrice = new JLabel();
@@ -131,6 +133,7 @@ public final class PanelUtils {
 
         timeType3.setForeground(Color.WHITE);
         timeType3.setText("3M:");
+        timeType3.setToolTipText("3 Months");
         rightPanel.add(timeType3, getGbc(gbc, 0, 4, 1, 1, 0, 0, new Insets(topBottomInset, 0, topBottomInset, 0)));
 
         JLabel low3MonthPrice = new JLabel();

@@ -6,35 +6,27 @@ import javax.inject.Inject;
 import javax.swing.*;
 
 import com.marketwatcher.data.MarketWatcherItem;
-import com.marketwatcher.data.MarketWatcherList;
-import com.marketwatcher.data.MarketWatcherListDataManager;
+import com.marketwatcher.data.MarketWatcherTab;
+import com.marketwatcher.data.MarketWatcherTabDataManager;
 
-import static com.marketwatcher.ui.Constants.*;
-import static com.marketwatcher.utilities.PriceUtils.*;
+import static com.marketwatcher.utilities.Constants.*;
 
-import com.marketwatcher.ui.MarketWatcherListPluginPanel;
+import com.marketwatcher.ui.MarketWatcherTabPluginPanel;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.util.QuantityFormatter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.math.BigInteger;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.time.Instant;
 import java.util.regex.Pattern;
 
-import net.runelite.api.ChatMessageType;
+import com.google.gson.Gson;
 import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -52,34 +44,21 @@ import okhttp3.Response;
         name = PLUGIN_NAME
 )
 public class MarketWatcherPlugin extends Plugin {
-
-    // Response offset indices are used to obtain a substring of the response string from the market API for processing.
-    private static final int RESPONSE_OFFSET_START_INDEX = 8;
-    private static final int RESPONSE_OFFSET_END_INDEX = 24;
-    private static final String ADD_EDIT_TAB_MESSAGE = "Enter the name of this tab (30 chars max).";
-    private static final String ADD_NEW_TAB_TITLE = "Add New Tab";
-    private static final String EDIT_TAB_TITLE = "Edit Tab";
-
     @Inject
     private Client client;
-
-    //	@Inject
-    private OkHttpClient okHttpClient;
-
     @Inject
     private ClientThread clientThread;
     @Inject
     private ItemManager itemManager;
-
     @Inject
-    private MarketWatcherListDataManager dataManager;
+    private ConfigManager configManager;
+    @Inject
+    private Gson gson;
+    @Inject
+    private MarketWatcherTabDataManager dataManager;
 
     @Inject
     private ClientToolbar clientToolbar;
-
-    private MarketWatcherListPluginPanel panel;
-
-    private NavigationButton navButton;
 
     @Getter
     @Setter
@@ -87,15 +66,28 @@ public class MarketWatcherPlugin extends Plugin {
 
     @Getter
     @Setter
-    private List<MarketWatcherList> tabs = new ArrayList<>();
+    private List<MarketWatcherTab> tabs = new ArrayList<>();
 
     @Getter
     @Setter
-    Map<Integer, Map<String, String>> itemStatsMap = new HashMap<>();
+    Map<Integer, Map<String, String>> itemPriceMap = new HashMap<>();
 
     @Getter
     @Setter
     private long value = 0;
+
+    private OkHttpClient okHttpClient;
+
+    private MarketWatcherTabPluginPanel panel;
+
+    private NavigationButton navButton;
+
+    // Response offset indices are used to obtain a substring of the response string from the market API for processing.
+    private static final int RESPONSE_OFFSET_START_INDEX = 8;
+    private static final int RESPONSE_OFFSET_END_INDEX = 24;
+    private static final String ADD_EDIT_TAB_MESSAGE = "Enter the name of this tab (30 chars max).";
+    private static final String ADD_NEW_TAB_TITLE = "Add New Tab";
+    private static final String EDIT_TAB_TITLE = "Edit Tab";
 
 
     @Override
@@ -107,13 +99,18 @@ public class MarketWatcherPlugin extends Plugin {
         retrieveItemPriceHistories(ONE_MONTH);
         retrieveItemPriceHistories(THREE_MONTHS);
 
-        panel = injector.getInstance(MarketWatcherListPluginPanel.class);
+        panel = injector.getInstance(MarketWatcherTabPluginPanel.class);
 
         final BufferedImage icon = ImageUtil.loadImageResource(MarketWatcherPlugin.class, PANEL_ICON_PATH);
 
         navButton = NavigationButton.builder().tooltip(PLUGIN_NAME).icon(icon).priority(11).panel(panel).build();
 
         clientToolbar.addNavigation(navButton);
+
+        this.dataManager = new MarketWatcherTabDataManager(this, client, configManager, itemManager, gson);
+
+        clientThread.invokeLater(() -> dataManager.loadData());
+
     }
 
     @Override
@@ -147,7 +144,7 @@ public class MarketWatcherPlugin extends Plugin {
         });
     }
 
-    public void addItemsToTab(MarketWatcherList tab, List<String> itemNames) {
+    public void addItemsToTab(MarketWatcherTab tab, List<String> itemNames) {
         clientThread.invokeLater(() -> {
             for (String itemName : itemNames) {
                 MarketWatcherItem item = items.stream().filter(o -> o.getName().equals(itemName)).findFirst().orElse(null);
@@ -159,7 +156,7 @@ public class MarketWatcherPlugin extends Plugin {
         });
     }
 
-    public void removeItemFromTab(MarketWatcherList tab, MarketWatcherItem item) {
+    public void removeItemFromTab(MarketWatcherTab tab, MarketWatcherItem item) {
         clientThread.invokeLater(() -> {
             tab.getItems().remove(item);
             items.add(item);
@@ -168,7 +165,7 @@ public class MarketWatcherPlugin extends Plugin {
         });
     }
 
-    public void switchTabCollapse(MarketWatcherList tab) {
+    public void switchTabCollapse(MarketWatcherTab tab) {
         clientThread.invokeLater(() -> {
             tab.setCollapsed(!tab.isCollapsed());
             dataManager.saveData();
@@ -189,7 +186,7 @@ public class MarketWatcherPlugin extends Plugin {
 
         String tabName = name;
         clientThread.invokeLater(() -> {
-            MarketWatcherList tab = new MarketWatcherList(tabName, new ArrayList<>());
+            MarketWatcherTab tab = new MarketWatcherTab(tabName, new ArrayList<>());
 
             if (!tabs.contains(tab)) {
                 tabs.add(tab);
@@ -217,7 +214,7 @@ public class MarketWatcherPlugin extends Plugin {
         });
     }
 
-    public void shiftItemInTab(MarketWatcherList tab, int itemIndex, boolean shiftUp) {
+    public void shiftItemInTab(MarketWatcherTab tab, int itemIndex, boolean shiftUp) {
         clientThread.invokeLater(() -> {
             List<MarketWatcherItem> tabItems = tab.getItems();
             MarketWatcherItem shiftedItem = tab.getItems().get(itemIndex);
@@ -236,7 +233,7 @@ public class MarketWatcherPlugin extends Plugin {
         });
     }
 
-    public void removeTab(MarketWatcherList tab) {
+    public void removeTab(MarketWatcherTab tab) {
         clientThread.invokeLater(() -> {
             // Move items out of tab and delete
             items.addAll(tab.getItems());
@@ -248,7 +245,7 @@ public class MarketWatcherPlugin extends Plugin {
 
     public void updateItemPrices() {
         // Tab item prices
-        for (MarketWatcherList tab : tabs) {
+        for (MarketWatcherTab tab : tabs) {
             for (MarketWatcherItem item : tab.getItems()) {
                 item.setGePrice(itemManager.getItemPrice(item.getItemId()));
             }
@@ -262,7 +259,7 @@ public class MarketWatcherPlugin extends Plugin {
         SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
     }
 
-    public void editTab(MarketWatcherList tab) {
+    public void editTab(MarketWatcherTab tab) {
         String name = JOptionPane.showInputDialog(panel, ADD_EDIT_TAB_MESSAGE, EDIT_TAB_TITLE, JOptionPane.PLAIN_MESSAGE);
 
         if (name == null || name.isEmpty()) {
@@ -275,7 +272,7 @@ public class MarketWatcherPlugin extends Plugin {
 
         String tabName = name;
         clientThread.invokeLater(() -> {
-            MarketWatcherList nameCheck = tabs.stream().filter(o -> o.getName().equals(tabName)).findFirst().orElse(null);
+            MarketWatcherTab nameCheck = tabs.stream().filter(o -> o.getName().equals(tabName)).findFirst().orElse(null);
 
             if (nameCheck == null) {
                 tab.setName(tabName);
@@ -286,7 +283,7 @@ public class MarketWatcherPlugin extends Plugin {
     }
 
     private boolean containsItem(MarketWatcherItem newItem) {
-        for (MarketWatcherList tab : tabs) {
+        for (MarketWatcherTab tab : tabs) {
             if (tab.getItems().contains(newItem)) {
                 return true;
             }
@@ -359,14 +356,14 @@ public class MarketWatcherPlugin extends Plugin {
 
             int currentItemID = Integer.parseInt(entry.getKey());
 
-            Map<String, String> timeFrameValuesMapping = itemStatsMap.get(currentItemID);
+            Map<String, String> timeFrameValuesMapping = itemPriceMap.get(currentItemID);
 
             if (timeFrameValuesMapping == null) {
                 Map<String, String> timeFrameValues = new HashMap<>();
                 timeFrameValues.put(timePeriod + LOW, lowPrice);
                 timeFrameValues.put(timePeriod + MED, medPrice);
                 timeFrameValues.put(timePeriod + HIGH, highPrice);
-                itemStatsMap.put(Integer.parseInt(entry.getKey()), timeFrameValues);
+                itemPriceMap.put(Integer.parseInt(entry.getKey()), timeFrameValues);
             } else {
                 timeFrameValuesMapping.put(timePeriod + LOW, lowPrice);
                 timeFrameValuesMapping.put(timePeriod + MED, medPrice);

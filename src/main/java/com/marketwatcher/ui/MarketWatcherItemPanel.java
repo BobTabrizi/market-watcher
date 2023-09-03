@@ -3,12 +3,11 @@ package com.marketwatcher.ui;
 import com.marketwatcher.MarketWatcherPlugin;
 import com.marketwatcher.data.MarketWatcherItem;
 
-import static com.marketwatcher.ui.Constants.*;
+import static com.marketwatcher.utilities.Constants.*;
 import static com.marketwatcher.utilities.PanelUtils.createRightPanel;
 
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.client.util.QuantityFormatter;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
