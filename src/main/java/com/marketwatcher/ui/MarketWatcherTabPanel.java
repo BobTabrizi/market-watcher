@@ -63,7 +63,7 @@ public class MarketWatcherTabPanel extends JPanel {
         UNCOLLAPSED_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(uncollapsedImage, 0.53f));
     }
 
-    MarketWatcherTabPanel(MarketWatcherPlugin plugin, MarketWatcherTabPluginPanel panel, MarketWatcherTab tab) {
+    MarketWatcherTabPanel(MarketWatcherPlugin plugin, MarketWatcherPluginPanel panel, MarketWatcherTab tab) {
         setLayout(new BorderLayout(5, 0));
         setBorder(new EmptyBorder(5, 5, 5, 0));
         setBackground(ColorScheme.DARKER_GRAY_COLOR);

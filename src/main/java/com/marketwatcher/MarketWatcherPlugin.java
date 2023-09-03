@@ -11,7 +11,7 @@ import com.marketwatcher.data.MarketWatcherTabDataManager;
 
 import static com.marketwatcher.utilities.Constants.*;
 
-import com.marketwatcher.ui.MarketWatcherTabPluginPanel;
+import com.marketwatcher.ui.MarketWatcherPluginPanel;
 import net.runelite.client.game.ItemManager;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,13 +72,9 @@ public class MarketWatcherPlugin extends Plugin {
     @Setter
     Map<Integer, Map<String, String>> itemPriceMap = new HashMap<>();
 
-    @Getter
-    @Setter
-    private long value = 0;
-
     private OkHttpClient okHttpClient;
 
-    private MarketWatcherTabPluginPanel panel;
+    private MarketWatcherPluginPanel panel;
 
     private NavigationButton navButton;
 
@@ -99,7 +95,7 @@ public class MarketWatcherPlugin extends Plugin {
         retrieveItemPriceHistories(ONE_MONTH);
         retrieveItemPriceHistories(THREE_MONTHS);
 
-        panel = injector.getInstance(MarketWatcherTabPluginPanel.class);
+        panel = injector.getInstance(MarketWatcherPluginPanel.class);
 
         final BufferedImage icon = ImageUtil.loadImageResource(MarketWatcherPlugin.class, PANEL_ICON_PATH);
 
@@ -194,6 +190,10 @@ public class MarketWatcherPlugin extends Plugin {
                 SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
             }
         });
+    }
+
+    public void showHelp() {
+        JOptionPane.showMessageDialog(panel, "Each item displays price history for the past week, month, and 3 months. \nFor each time period, the price lows, averages, and highs are color coded in rows. \nGreen numbers are lows. Yellow numbers are averages. Red numbers are highs.", "Information", JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void shiftItem(int itemIndex, boolean shiftUp) {

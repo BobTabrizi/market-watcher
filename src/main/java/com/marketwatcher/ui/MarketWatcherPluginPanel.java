@@ -40,7 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class MarketWatcherTabPluginPanel extends PluginPanel {
+public class MarketWatcherPluginPanel extends PluginPanel {
     private final MarketWatcherPlugin plugin;
     private final ClientThread clientThread;
     private final RuneLiteConfig runeLiteConfig;
@@ -57,12 +57,15 @@ public class MarketWatcherTabPluginPanel extends PluginPanel {
     private static final String GE_SEARCH_TITLE = "Grand Exchange Search";
     private static final String CONTAINS_ITEM_TITLE = "Info";
     private static final String SEARCH_PROMPT = "Search for an item to select";
+    private static final String INFO_TOOLTIP = "Information";
     private static final String ADD_ITEM_TOOLTIP = "Add an item from the Grand Exchange";
     private static final String ADD_TAB_ITEM_TOOLTIP = "Add an item tab";
     private static final String CONTAINS_ITEM_MESSAGE = "This item is already being tracked.";
     private static final String SEARCH_ERROR = "No results found.";
     private static final String SEARCH_ERROR_MESSAGE = "No items were found with that name, please try again.";
     private static final String CANCEL = "Cancel";
+    private static final ImageIcon INFO_ICON;
+    private static final ImageIcon INFO_HOVER_ICON;
     private static final ImageIcon ADD_ICON;
     private static final ImageIcon ADD_HOVER_ICON;
 
@@ -79,8 +82,6 @@ public class MarketWatcherTabPluginPanel extends PluginPanel {
 
     private final JPanel centerPanel = new JPanel(centerCard);
     private final JPanel marketWatcherPanel = new JPanel(new BorderLayout());
-    private final JPanel valuePanel = new JPanel(new BorderLayout());
-    private final JLabel value = new JLabel();
     private final JPanel titlePanel = new JPanel(new BorderLayout());
     private final JPanel searchPanel = new JPanel(new BorderLayout());
     private final JPanel searchCenterPanel = new JPanel(searchCard);
@@ -91,28 +92,33 @@ public class MarketWatcherTabPluginPanel extends PluginPanel {
     private final GridBagConstraints constraints = new GridBagConstraints();
     private final JLabel title = new JLabel();
     private final JPanel actionPanel = new JPanel(new BorderLayout());
+    private final JLabel information = new JLabel(INFO_ICON);
     private final JLabel addTabItem = new JLabel(ADD_TAB_ICON);
     private final JLabel addItem = new JLabel(ADD_ICON);
 
     private final List<MarketWatcherItem> searchItems = new ArrayList<>();
 
     static {
-        final BufferedImage addImage = ImageUtil.loadImageResource(MarketWatcherTabPluginPanel.class, ADD_ICON_PATH);
+        final BufferedImage infoImage = ImageUtil.loadImageResource(MarketWatcherPluginPanel.class, INFO_ICON_PATH);
+        INFO_ICON = new ImageIcon(infoImage);
+        INFO_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(infoImage, 0.53f));
+
+        final BufferedImage addImage = ImageUtil.loadImageResource(MarketWatcherPluginPanel.class, ADD_ICON_PATH);
         ADD_ICON = new ImageIcon(addImage);
         ADD_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(addImage, 0.53f));
 
-        final BufferedImage addTabImage = ImageUtil.loadImageResource(MarketWatcherTabPluginPanel.class, ADD_TAB_ICON_PATH);
+        final BufferedImage addTabImage = ImageUtil.loadImageResource(MarketWatcherPluginPanel.class, ADD_TAB_ICON_PATH);
         ADD_TAB_ICON = new ImageIcon(addTabImage);
         ADD_TAB_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(addTabImage, 0.53f));
 
-        final BufferedImage cancelImage = ImageUtil.loadImageResource(MarketWatcherTabPluginPanel.class, CANCEL_ICON_PATH);
+        final BufferedImage cancelImage = ImageUtil.loadImageResource(MarketWatcherPluginPanel.class, CANCEL_ICON_PATH);
         CANCEL_ICON = new ImageIcon(cancelImage);
         CANCEL_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(cancelImage, 0.53f));
     }
 
 
     @Inject
-    MarketWatcherTabPluginPanel(MarketWatcherPlugin plugin, ClientThread clientThread, RuneLiteConfig runeLiteConfig, ItemManager itemManager) throws IOException {
+    MarketWatcherPluginPanel(MarketWatcherPlugin plugin, ClientThread clientThread, RuneLiteConfig runeLiteConfig, ItemManager itemManager) throws IOException {
         super(false);
         this.plugin = plugin;
         this.clientThread = clientThread;
@@ -129,6 +135,29 @@ public class MarketWatcherTabPluginPanel extends PluginPanel {
         title.setPreferredSize(new Dimension(100, 10));
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 3, 3));
+
+
+        // Info Button
+        information.setToolTipText(INFO_TOOLTIP);
+        information.setBorder(new EmptyBorder(0, 0, 0, 10));
+        information.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                plugin.showHelp();
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                information.setIcon(INFO_HOVER_ICON);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                information.setIcon(INFO_ICON);
+            }
+        });
+
+        actionPanel.add(information, BorderLayout.LINE_START);
 
         // Add Tab Button
         addTabItem.setToolTipText(ADD_TAB_ITEM_TOOLTIP);
@@ -149,7 +178,7 @@ public class MarketWatcherTabPluginPanel extends PluginPanel {
                 addTabItem.setIcon(ADD_TAB_ICON);
             }
         });
-        actionPanel.add(addTabItem, BorderLayout.WEST);
+        actionPanel.add(addTabItem, BorderLayout.CENTER);
 
         // Add Item Button
         addItem.setToolTipText(ADD_ITEM_TOOLTIP);
@@ -170,7 +199,7 @@ public class MarketWatcherTabPluginPanel extends PluginPanel {
             }
         });
 
-        actionPanel.add(addItem, BorderLayout.EAST);
+        actionPanel.add(addItem, BorderLayout.LINE_END);
 
         actions.add(actionPanel);
 
@@ -199,12 +228,6 @@ public class MarketWatcherTabPluginPanel extends PluginPanel {
         titlePanel.add(title, BorderLayout.LINE_START);
         titlePanel.add(actions, BorderLayout.LINE_END);
 
-        value.setForeground(new Color(255, 202, 36));
-        value.setBorder(new EmptyBorder(0, 0, 5, 0));
-
-        // Value Panel
-        valuePanel.add(value, BorderLayout.WEST);
-
         // Market Watch Items Panel
         marketWatcherItemsPanel.setLayout(new GridBagLayout());
 
@@ -218,7 +241,6 @@ public class MarketWatcherTabPluginPanel extends PluginPanel {
         marketWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(5, 5, 0, 0));
 
         // Market Watch Panel
-        marketWatcherPanel.add(valuePanel, BorderLayout.NORTH);
         marketWatcherPanel.add(marketWrapper, BorderLayout.CENTER);
 
         // Search Results Panel

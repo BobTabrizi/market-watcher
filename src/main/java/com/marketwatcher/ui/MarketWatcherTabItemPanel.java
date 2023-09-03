@@ -28,7 +28,7 @@ public class MarketWatcherTabItemPanel extends JPanel {
     private static final ImageIcon SHIFT_DOWN_HOVER_ICON;
 
     static {
-        final BufferedImage removeImage = ImageUtil.loadImageResource(MarketWatcherTabPluginPanel.class, DELETE_ICON_PATH);
+        final BufferedImage removeImage = ImageUtil.loadImageResource(MarketWatcherPluginPanel.class, DELETE_ICON_PATH);
         REMOVE_ICON = new ImageIcon(removeImage);
         REMOVE_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(removeImage, 0.53f));
 
