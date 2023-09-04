@@ -52,6 +52,7 @@ public final class Constants {
     public static final String SHIFT_DOWN_ICON_PATH = "/shiftdownicon.png";
     public static final String ADD_TAB_ITEM_ICON_PATH = "/addtabitemicon.png";
     public static final String EDIT_TAB_ICON_PATH = "/edittabicon.png";
+    public static final String DELETE_TAB_ICON_PATH = "/trashicon.png";
     public static final String COLLAPSE_ICON_PATH = "/collapseicon.png";
     public static final String INFO_ICON_PATH = "/infoicon.png";
     public static final String ADD_ICON_PATH = "/addicon.png";

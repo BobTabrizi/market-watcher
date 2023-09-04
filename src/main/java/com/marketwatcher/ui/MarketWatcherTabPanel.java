@@ -9,15 +9,11 @@ import static com.marketwatcher.utilities.Constants.*;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ImageUtil;
 
-import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -25,7 +21,6 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -39,6 +34,8 @@ public class MarketWatcherTabPanel extends JPanel {
     private static final ImageIcon ADD_HOVER_ICON;
     private static final ImageIcon EDIT_ICON;
     private static final ImageIcon EDIT_HOVER_ICON;
+    private static final ImageIcon DELETE_TAB_ICON;
+    private static final ImageIcon DELETE_TAB_HOVER_ICON;
     private static final ImageIcon COLLAPSED_ICON;
     private static final ImageIcon COLLAPSED_HOVER_ICON;
     private static final ImageIcon UNCOLLAPSED_ICON;
@@ -53,6 +50,10 @@ public class MarketWatcherTabPanel extends JPanel {
         final BufferedImage editImage = ImageUtil.loadImageResource(MarketWatcherPlugin.class, EDIT_TAB_ICON_PATH);
         EDIT_ICON = new ImageIcon(ImageUtil.alphaOffset(editImage, 0.53f));
         EDIT_HOVER_ICON = new ImageIcon(editImage);
+
+        final BufferedImage deleteTabImage = ImageUtil.loadImageResource(MarketWatcherPlugin.class, DELETE_TAB_ICON_PATH);
+        DELETE_TAB_ICON = new ImageIcon(ImageUtil.alphaOffset(deleteTabImage, 0.53f));
+        DELETE_TAB_HOVER_ICON = new ImageIcon(deleteTabImage);
 
         final BufferedImage collapsedImage = ImageUtil.loadImageResource(MarketWatcherPlugin.class, COLLAPSE_ICON_PATH);
         COLLAPSED_ICON = new ImageIcon(collapsedImage);
@@ -73,28 +74,6 @@ public class MarketWatcherTabPanel extends JPanel {
         // Top Panel
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
-
-        // Right click for tab deletion
-        JPopupMenu deletePopup = new JPopupMenu();
-
-        JMenuItem delete = new JMenuItem(new AbstractAction(DELETE_TITLE) {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (deleteConfirm()) {
-                    plugin.removeTab(tab);
-                }
-            }
-        });
-        deletePopup.add(delete);
-
-        topPanel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                if (SwingUtilities.isRightMouseButton(e)) {
-                    deletePopup.show(e.getComponent(), e.getX(), e.getY());
-                }
-            }
-        });
 
         // Collapse and Names
         JPanel leftActions = new JPanel(new BorderLayout());
@@ -166,10 +145,36 @@ public class MarketWatcherTabPanel extends JPanel {
             rightActions.setBorder(new EmptyBorder(0, 0, 0, 5));
             rightActions.setOpaque(false);
 
+            // Delete Button
+            JLabel deleteBtn = new JLabel(DELETE_TAB_ICON);
+            deleteBtn.setVerticalAlignment(SwingConstants.CENTER);
+            deleteBtn.setBorder(new EmptyBorder(0, 0, 0, 5));
+            deleteBtn.setOpaque(false);
+            deleteBtn.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    if (deleteConfirm()) {
+                        plugin.removeTab(tab);
+                    }
+                }
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    deleteBtn.setIcon(DELETE_TAB_HOVER_ICON);
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    deleteBtn.setIcon(DELETE_TAB_ICON);
+                }
+            });
+
+            rightActions.add(deleteBtn, BorderLayout.LINE_START);
+
             // Edit Button
             JLabel edit = new JLabel(EDIT_ICON);
             edit.setVerticalAlignment(SwingConstants.CENTER);
-            edit.setBorder(new EmptyBorder(0, 0, 0, 0));
+            edit.setBorder(new EmptyBorder(0, 0, 0, 5));
             edit.setOpaque(false);
             edit.addMouseListener(new MouseAdapter() {
                 @Override
@@ -188,12 +193,7 @@ public class MarketWatcherTabPanel extends JPanel {
                 }
             });
 
-            rightActions.add(edit, BorderLayout.WEST);
-
-            // Empty panel to separate without causing extra hover
-            JPanel empty = new JPanel();
-            empty.setOpaque(false);
-            rightActions.add(empty, BorderLayout.CENTER);
+            rightActions.add(edit, BorderLayout.CENTER);
 
             JLabel addItem = new JLabel(ADD_ICON);
             addItem.setOpaque(false);
@@ -223,7 +223,7 @@ public class MarketWatcherTabPanel extends JPanel {
                     addItem.setIcon(ADD_ICON);
                 }
             });
-            rightActions.add(addItem, BorderLayout.EAST);
+            rightActions.add(addItem, BorderLayout.LINE_END);
 
             topPanel.add(rightActions, BorderLayout.EAST);
 
