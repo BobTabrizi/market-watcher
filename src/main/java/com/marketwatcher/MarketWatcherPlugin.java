@@ -24,8 +24,8 @@
  */
 package com.marketwatcher;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import com.marketwatcher.utilities.WikiItemDetails;
+import com.marketwatcher.utilities.WikiRequestResult;
 import javax.inject.Inject;
 import javax.swing.*;
 
@@ -43,9 +43,7 @@ import java.awt.image.BufferedImage;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.time.Instant;
-import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import net.runelite.api.Client;
@@ -103,9 +101,6 @@ public class MarketWatcherPlugin extends Plugin
 
 	private NavigationButton navButton;
 
-	// Response offset indices are used to obtain a substring of the response string from the market API for processing.
-	private static final int RESPONSE_OFFSET_START_INDEX = 8;
-	private static final int RESPONSE_OFFSET_END_INDEX = 24;
 	private static final String ADD_EDIT_TAB_MESSAGE = "Enter the name of this tab (30 chars max).";
 	private static final String ADD_NEW_TAB_TITLE = "Add New Tab";
 	private static final String EDIT_TAB_TITLE = "Edit Tab";
@@ -395,45 +390,33 @@ public class MarketWatcherPlugin extends Plugin
 			System.out.println(e);
 		}
 
-		String modifiedResponse = resp.substring(RESPONSE_OFFSET_START_INDEX, resp.length() - RESPONSE_OFFSET_END_INDEX);
-		final Map<String, Object> jsonObject = new ObjectMapper().readValue(modifiedResponse, Map.class);
+		WikiRequestResult wikiRequestResult = gson.fromJson(resp, WikiRequestResult.class);
 
-		for (Map.Entry<String, Object> entry : jsonObject.entrySet())
+		for (Map.Entry<Integer, WikiItemDetails> entry : wikiRequestResult.getData().entrySet())
 		{
-			String text = entry.getValue().toString();
-			Pattern pattern = Pattern.compile("([^=\\s]+)=([^=\\s]*(?:\\s+[^=\\s]+)*)(?!\\S)");
-			Matcher matcher = pattern.matcher(text);
-
-			String highPrice = NOT_AVAILABLE;
-			String lowPrice = NOT_AVAILABLE;
+			String lowPrice = Integer.toString(entry.getValue().getAvgLowPrice());
 			String medPrice = NOT_AVAILABLE;
-			if (matcher.find())
+			String highPrice = Integer.toString(entry.getValue().getAvgHighPrice());
+
+			if (highPrice.equals("0"))
 			{
-				if (matcher.group(2) != null && !matcher.group(2).equals(NULL))
-				{
-					highPrice = matcher.group(2).replace(COMMA, EMPTY_STRING);
-				}
+				highPrice = NOT_AVAILABLE;
 			}
 
-			matcher.find();
-			if (matcher.find())
+			if (lowPrice.equals("0"))
 			{
-				if (matcher.group(2) != null && !matcher.group(2).equals(NULL))
-				{
-					lowPrice = matcher.group(2).replace(COMMA, EMPTY_STRING);
-				}
+				lowPrice = NOT_AVAILABLE;
 			}
 
-			if (!highPrice.equals(NULL) && !lowPrice.equals(NULL))
+			if (!highPrice.equals(NOT_AVAILABLE) && !lowPrice.equals(NOT_AVAILABLE))
 			{
 				BigInteger highPriceInteger = BigInteger.valueOf(Integer.parseInt(highPrice));
 				BigInteger lowPriceInteger = BigInteger.valueOf(Integer.parseInt(lowPrice));
+
 				medPrice = String.valueOf(highPriceInteger.add(lowPriceInteger).divide(new BigInteger("2")));
 			}
-
-			int currentItemID = Integer.parseInt(entry.getKey());
-
-			Map<String, String> timeFrameValuesMapping = itemPriceMap.get(currentItemID);
+			int currentID = entry.getKey();
+			Map<String, String> timeFrameValuesMapping = itemPriceMap.get(currentID);
 
 			if (timeFrameValuesMapping == null)
 			{
@@ -441,7 +424,7 @@ public class MarketWatcherPlugin extends Plugin
 				timeFrameValues.put(timePeriod + LOW, lowPrice);
 				timeFrameValues.put(timePeriod + MED, medPrice);
 				timeFrameValues.put(timePeriod + HIGH, highPrice);
-				itemPriceMap.put(Integer.parseInt(entry.getKey()), timeFrameValues);
+				itemPriceMap.put(currentID, timeFrameValues);
 			}
 			else
 			{

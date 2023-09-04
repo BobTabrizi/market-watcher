@@ -22,10 +22,6 @@ dependencies {
     testImplementation group: 'net.runelite', name: 'client', version: runeLiteVersion
     testImplementation group: 'net.runelite', name: 'jshell', version: runeLiteVersion
 
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.0.1'
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.0.1'
-    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.0.1'
-
 }
 
 group = 'com.marketwatcher'
