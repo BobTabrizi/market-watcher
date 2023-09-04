@@ -1,3 +1,27 @@
+/*
+ * Copyright (c) 2023, Bob Tabrizi
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.marketwatcher.ui;
 
 import net.runelite.client.ui.ColorScheme;
@@ -17,79 +41,87 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 
-public class MarketWatcherSelectionPanel {
-    private final JList<String> list;
-    private ActionListener okEvent;
-    private final JDialog dialog;
-    private static final String OK = "Ok";
-    private static final String CANCEL = "Cancel";
-    private static final String TITLE = "Select Items";
-    private static final String MESSAGE = "Select items to add to this tab";
-    private static final String SUBMESSAGE = "Ctrl+Click to select multiple items";
+public class MarketWatcherSelectionPanel
+{
+	private final JList<String> list;
+	private ActionListener okEvent;
+	private final JDialog dialog;
+	private static final String OK = "Ok";
+	private static final String CANCEL = "Cancel";
+	private static final String TITLE = "Select Items";
+	private static final String MESSAGE = "Select items to add to this tab";
+	private static final String SUBMESSAGE = "Ctrl+Click to select multiple items";
 
-    public MarketWatcherSelectionPanel(JPanel parent, String[] options) {
-        this.list = new JList<>(options);
-        this.list.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+	public MarketWatcherSelectionPanel(JPanel parent, String[] options)
+	{
+		this.list = new JList<>(options);
+		this.list.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
-        // Top Panel
-        JPanel topPanel = new JPanel(new BorderLayout());
+		// Top Panel
+		JPanel topPanel = new JPanel(new BorderLayout());
 
-        JLabel message = new JLabel(MESSAGE);
-        message.setHorizontalAlignment(SwingConstants.CENTER);
-        JLabel subMessage = new JLabel(SUBMESSAGE);
-        subMessage.setHorizontalAlignment(SwingConstants.CENTER);
+		JLabel message = new JLabel(MESSAGE);
+		message.setHorizontalAlignment(SwingConstants.CENTER);
+		JLabel subMessage = new JLabel(SUBMESSAGE);
+		subMessage.setHorizontalAlignment(SwingConstants.CENTER);
 
-        topPanel.add(message, BorderLayout.NORTH);
-        topPanel.add(subMessage, BorderLayout.CENTER);
+		topPanel.add(message, BorderLayout.NORTH);
+		topPanel.add(subMessage, BorderLayout.CENTER);
 
-        // Center Panel with Items
-        JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
-        centerPanel.setPreferredSize(new Dimension(250, 300));
+		// Center Panel with Items
+		JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
+		centerPanel.setPreferredSize(new Dimension(250, 300));
 
-        DefaultListCellRenderer renderer = (DefaultListCellRenderer) list.getCellRenderer();
-        renderer.setHorizontalAlignment(SwingConstants.CENTER);
+		DefaultListCellRenderer renderer = (DefaultListCellRenderer) list.getCellRenderer();
+		renderer.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JScrollPane scrollPane = new JScrollPane();
-        scrollPane.setViewportView(list);
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setViewportView(list);
 
-        centerPanel.add(topPanel, BorderLayout.NORTH);
-        centerPanel.add(scrollPane, BorderLayout.CENTER);
+		centerPanel.add(topPanel, BorderLayout.NORTH);
+		centerPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Options
-        JOptionPane optionPane = new JOptionPane(centerPanel);
+		// Options
+		JOptionPane optionPane = new JOptionPane(centerPanel);
 
-        JButton okButton = new JButton(OK);
-        okButton.addActionListener(this::onOkButtonClick);
+		JButton okButton = new JButton(OK);
+		okButton.addActionListener(this::onOkButtonClick);
 
-        JButton cancelButton = new JButton(CANCEL);
-        cancelButton.addActionListener(this::onCancelButtonClick);
+		JButton cancelButton = new JButton(CANCEL);
+		cancelButton.addActionListener(this::onCancelButtonClick);
 
-        optionPane.setOptions(new Object[]{okButton, cancelButton});
+		optionPane.setOptions(new Object[]{okButton, cancelButton});
 
-        dialog = optionPane.createDialog(parent, TITLE);
-        dialog.setTitle(TITLE);
-    }
+		dialog = optionPane.createDialog(parent, TITLE);
+		dialog.setTitle(TITLE);
+	}
 
-    public List<String> getSelectedItems() {
-        return list.getSelectedValuesList();
-    }
+	public List<String> getSelectedItems()
+	{
+		return list.getSelectedValuesList();
+	}
 
-    public void setOnOk(ActionListener event) {
-        okEvent = event;
-    }
+	public void setOnOk(ActionListener event)
+	{
+		okEvent = event;
+	}
 
-    private void onOkButtonClick(ActionEvent e) {
-        if (okEvent != null) {
-            okEvent.actionPerformed(e);
-        }
-        dialog.setVisible(false);
-    }
+	private void onOkButtonClick(ActionEvent e)
+	{
+		if (okEvent != null)
+		{
+			okEvent.actionPerformed(e);
+		}
+		dialog.setVisible(false);
+	}
 
-    private void onCancelButtonClick(ActionEvent e) {
-        dialog.setVisible(false);
-    }
+	private void onCancelButtonClick(ActionEvent e)
+	{
+		dialog.setVisible(false);
+	}
 
-    public void show() {
-        dialog.setVisible(true);
-    }
+	public void show()
+	{
+		dialog.setVisible(true);
+	}
 }
