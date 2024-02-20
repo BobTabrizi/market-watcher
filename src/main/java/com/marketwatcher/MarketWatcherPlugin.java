@@ -24,8 +24,14 @@
  */
 package com.marketwatcher;
 
+import com.google.inject.Provides;
+import com.marketwatcher.utilities.MarketWatcherConfig;
 import com.marketwatcher.utilities.WikiItemDetails;
 import com.marketwatcher.utilities.WikiRequestResult;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.swing.*;
 
@@ -67,6 +73,7 @@ import okhttp3.Response;
 )
 public class MarketWatcherPlugin extends Plugin
 {
+	public static final String CONFIG_GROUP = "marketwatcher";
 	@Inject
 	private Client client;
 	@Inject
@@ -96,25 +103,48 @@ public class MarketWatcherPlugin extends Plugin
 	Map<Integer, Map<String, String>> itemPriceMap = new HashMap<>();
 
 	private OkHttpClient okHttpClient;
+	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
 	private MarketWatcherPluginPanel panel;
+	@Inject
+	private MarketWatcherConfig config;
 
 	private NavigationButton navButton;
 
 	private static final String ADD_EDIT_TAB_MESSAGE = "Enter the name of this tab (30 chars max).";
 	private static final String ADD_NEW_TAB_TITLE = "Add New Tab";
 	private static final String EDIT_TAB_TITLE = "Edit Tab";
+	private final Runnable dataRefresh = this::refreshItemData;
+	private ScheduledFuture<?> refreshHandler;
 
+	// Refresh item data. Every 12h by default.
+	public void refreshItemData()
+	{
+		try
+		{
+			fetchItemData();
+			clientThread.invokeLater(() -> dataManager.loadData());
+		}
+		catch (Exception e)
+		{
+			System.out.println(e);
+		}
+		updateItemPrices();
+	}
+
+	// Retrieve item price histories for one week, month, and three months.
+	// Store prices in a map to be accessed during search at any pointer later on.
+	protected void fetchItemData() throws Exception
+	{
+		retrieveItemPriceHistories(ONE_WEEK);
+		retrieveItemPriceHistories(ONE_MONTH);
+		retrieveItemPriceHistories(THREE_MONTHS);
+	}
 
 	@Override
 	protected void startUp() throws Exception
 	{
-
-		// Retrieve item price histories for one week, month, and three months.
-		// Store prices in a map to be accessed during search at any pointer later on.
-		retrieveItemPriceHistories(ONE_WEEK);
-		retrieveItemPriceHistories(ONE_MONTH);
-		retrieveItemPriceHistories(THREE_MONTHS);
+		fetchItemData();
 
 		panel = injector.getInstance(MarketWatcherPluginPanel.class);
 
@@ -128,14 +158,23 @@ public class MarketWatcherPlugin extends Plugin
 
 		clientThread.invokeLater(() -> dataManager.loadData());
 
+		final int refreshInterval = config.refreshInterval();
+
+		refreshHandler = scheduler.scheduleAtFixedRate(dataRefresh, refreshInterval, refreshInterval, TimeUnit.DAYS);
 	}
 
 	@Override
-	protected void shutDown() throws Exception
+	protected void shutDown()
 	{
 		clientToolbar.removeNavigation(navButton);
+		refreshHandler.cancel(true);
 	}
 
+	@Provides
+	MarketWatcherConfig provideConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(MarketWatcherConfig.class);
+	}
 
 	public void addItem(MarketWatcherItem item)
 	{
@@ -305,7 +344,10 @@ public class MarketWatcherPlugin extends Plugin
 			item.setGePrice(itemManager.getItemPrice(item.getItemId()));
 		}
 
-		SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
+		if(panel != null)
+		{
+			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
+		}
 	}
 
 	public void editTab(MarketWatcherTab tab)
