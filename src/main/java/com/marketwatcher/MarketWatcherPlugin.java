@@ -51,7 +51,6 @@ import com.marketwatcher.data.MarketWatcherTabDataManager;
 import static com.marketwatcher.utilities.Constants.*;
 
 import com.marketwatcher.ui.MarketWatcherPluginPanel;
-import lombok.var;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
