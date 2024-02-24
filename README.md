@@ -14,7 +14,10 @@ Default:
 - 3 Months
 
 ### Configuration
-Each of the three time periods can be configured in the user configuration settings. 
+
+##### Each of the three time periods can be configured in the user configuration settings.
+##### There is also an option to increase or decrease the interval at which the item price data is automatically refreshed
+
 ![Config Image](docs/MarketWatcherConfigImage.png)
 
 
