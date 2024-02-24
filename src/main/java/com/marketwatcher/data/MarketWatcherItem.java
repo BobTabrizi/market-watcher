@@ -50,31 +50,31 @@ public class MarketWatcherItem implements Comparable<MarketWatcherItem>
 
 	@Getter
 	@Setter
-	private String oneWeekLow;
+	private String periodOneLow;
 	@Getter
 	@Setter
-	private String oneWeekMed;
+	private String periodOneMed;
 	@Getter
 	@Setter
-	private String oneWeekHigh;
+	private String periodOneHigh;
 	@Getter
 	@Setter
-	private String oneMonthLow;
+	private String periodTwoLow;
 	@Getter
 	@Setter
-	private String oneMonthMed;
+	private String periodTwoMed;
 	@Getter
 	@Setter
-	private String oneMonthHigh;
+	private String periodTwoHigh;
 	@Getter
 	@Setter
-	private String threeMonthLow;
+	private String periodThreeLow;
 	@Getter
 	@Setter
-	private String threeMonthMed;
+	private String periodThreeMed;
 	@Getter
 	@Setter
-	private String threeMonthHigh;
+	private String periodThreeHigh;
 
 
 	public MarketWatcherItem(AsyncBufferedImage itemImage, String itemName, int itemID, int itemPrice)
@@ -83,15 +83,15 @@ public class MarketWatcherItem implements Comparable<MarketWatcherItem>
 		name = itemName;
 		itemId = itemID;
 		gePrice = itemPrice;
-		oneWeekLow = NOT_AVAILABLE;
-		oneWeekMed = NOT_AVAILABLE;
-		oneWeekHigh = NOT_AVAILABLE;
-		oneMonthLow = NOT_AVAILABLE;
-		oneMonthMed = NOT_AVAILABLE;
-		oneMonthHigh = NOT_AVAILABLE;
-		threeMonthLow = NOT_AVAILABLE;
-		threeMonthMed = NOT_AVAILABLE;
-		threeMonthHigh = NOT_AVAILABLE;
+		periodOneLow = NOT_AVAILABLE;
+		periodOneMed = NOT_AVAILABLE;
+		periodOneHigh = NOT_AVAILABLE;
+		periodTwoLow = NOT_AVAILABLE;
+		periodTwoMed = NOT_AVAILABLE;
+		periodTwoHigh = NOT_AVAILABLE;
+		periodThreeLow = NOT_AVAILABLE;
+		periodThreeMed = NOT_AVAILABLE;
+		periodThreeHigh = NOT_AVAILABLE;
 	}
 
 	@Override

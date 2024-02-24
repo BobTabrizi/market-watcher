@@ -25,9 +25,18 @@
 package com.marketwatcher;
 
 import com.google.inject.Provides;
+import com.marketwatcher.config.PricePeriodType;
 import com.marketwatcher.utilities.MarketWatcherConfig;
+import static com.marketwatcher.utilities.MarketWatcherConfig.AUTO_REFRESH_INTERVAL;
+import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_ONE_QUANTITY;
+import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_ONE_TYPE;
+import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_THREE_QUANTITY;
+import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_THREE_TYPE;
+import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_TWO_QUANTITY;
+import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_TWO_TYPE;
 import com.marketwatcher.utilities.WikiItemDetails;
 import com.marketwatcher.utilities.WikiRequestResult;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -42,6 +51,9 @@ import com.marketwatcher.data.MarketWatcherTabDataManager;
 import static com.marketwatcher.utilities.Constants.*;
 
 import com.marketwatcher.ui.MarketWatcherPluginPanel;
+import lombok.var;
+import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import lombok.extern.slf4j.Slf4j;
 
@@ -107,15 +119,29 @@ public class MarketWatcherPlugin extends Plugin
 
 	private MarketWatcherPluginPanel panel;
 	@Inject
+	@Getter
 	private MarketWatcherConfig config;
 
 	private NavigationButton navButton;
 
+	private boolean isActive;
 	private static final String ADD_EDIT_TAB_MESSAGE = "Enter the name of this tab (30 chars max).";
 	private static final String ADD_NEW_TAB_TITLE = "Add New Tab";
 	private static final String EDIT_TAB_TITLE = "Edit Tab";
+
+	public int configPricePeriodOneQty;
+	public int configPricePeriodTwoQty;
+	public int configPricePeriodThreeQty;
+
+	public PricePeriodType configPeriodOneType;
+	public PricePeriodType configPeriodTwoType;
+	public PricePeriodType configPeriodThreeType;
 	private final Runnable dataRefresh = this::refreshItemData;
 	private ScheduledFuture<?> refreshHandler;
+	private final ConcurrentHashMap.KeySetView<String, ?> pendingConfigChanges = ConcurrentHashMap.newKeySet();
+
+	private HashMap<PricePeriodType, Integer> typeMap = new HashMap<PricePeriodType, Integer>();
+
 
 	// Refresh item data. Every 12h by default.
 	public void refreshItemData()
@@ -124,6 +150,7 @@ public class MarketWatcherPlugin extends Plugin
 		{
 			fetchItemData();
 			clientThread.invokeLater(() -> dataManager.loadData());
+			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		}
 		catch (Exception e)
 		{
@@ -136,15 +163,23 @@ public class MarketWatcherPlugin extends Plugin
 	// Store prices in a map to be accessed during search at any pointer later on.
 	protected void fetchItemData() throws Exception
 	{
-		retrieveItemPriceHistories(ONE_WEEK);
-		retrieveItemPriceHistories(ONE_MONTH);
-		retrieveItemPriceHistories(THREE_MONTHS);
+		retrieveItemPriceHistories(configPeriodOneType, configPricePeriodOneQty, "period1");
+		retrieveItemPriceHistories(configPeriodTwoType, configPricePeriodTwoQty, "period2");
+		retrieveItemPriceHistories(configPeriodThreeType, configPricePeriodTwoQty, "period3");
 	}
 
 	@Override
 	protected void startUp() throws Exception
 	{
+		updateCachedConfigs();
+
+		typeMap.put(PricePeriodType.DAYS, UNIX_DAY);
+		typeMap.put(PricePeriodType.WEEKS, UNIX_WEEK);
+		typeMap.put(PricePeriodType.MONTHS, UNIX_MONTH);
+
 		fetchItemData();
+
+		isActive = true;
 
 		panel = injector.getInstance(MarketWatcherPluginPanel.class);
 
@@ -168,6 +203,7 @@ public class MarketWatcherPlugin extends Plugin
 	{
 		clientToolbar.removeNavigation(navButton);
 		refreshHandler.cancel(true);
+		isActive = false;
 	}
 
 	@Provides
@@ -184,6 +220,7 @@ public class MarketWatcherPlugin extends Plugin
 			{
 				items.add(item);
 				dataManager.saveData();
+				processPendingConfigChanges();
 				SwingUtilities.invokeLater(() ->
 				{
 					panel.switchToMarketWatch();
@@ -202,6 +239,7 @@ public class MarketWatcherPlugin extends Plugin
 		clientThread.invokeLater(() -> {
 			items.remove(item);
 			dataManager.saveData();
+			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -216,6 +254,7 @@ public class MarketWatcherPlugin extends Plugin
 				items.remove(item);
 			}
 			dataManager.saveData();
+			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -226,6 +265,7 @@ public class MarketWatcherPlugin extends Plugin
 			tab.getItems().remove(item);
 			items.add(item);
 			dataManager.saveData();
+			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -235,6 +275,7 @@ public class MarketWatcherPlugin extends Plugin
 		clientThread.invokeLater(() -> {
 			tab.setCollapsed(!tab.isCollapsed());
 			dataManager.saveData();
+			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -261,6 +302,7 @@ public class MarketWatcherPlugin extends Plugin
 			{
 				tabs.add(tab);
 				dataManager.saveData();
+				processPendingConfigChanges();
 				SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 			}
 		});
@@ -268,7 +310,8 @@ public class MarketWatcherPlugin extends Plugin
 
 	public void showHelp()
 	{
-		JOptionPane.showMessageDialog(panel, "Each item displays price history for the past week, month, and 3 months. \nFor each time period, the price lows, averages, and highs are color coded in rows. \nGreen numbers are lows. Yellow numbers are averages. Red numbers are highs.", "Information", JOptionPane.INFORMATION_MESSAGE);
+		processPendingConfigChanges();
+		JOptionPane.showMessageDialog(panel, "Each item displays price history with three price periods. Periods can be configured in plugin settings\nFor each time period, the price lows, averages, and highs are color coded in rows. \nGreen numbers are lows. Yellow numbers are averages. Red numbers are highs.", "Information", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	public void shiftItem(int itemIndex, boolean shiftUp)
@@ -289,6 +332,7 @@ public class MarketWatcherPlugin extends Plugin
 			}
 
 			dataManager.saveData();
+			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -312,6 +356,7 @@ public class MarketWatcherPlugin extends Plugin
 			}
 
 			dataManager.saveData();
+			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -323,6 +368,7 @@ public class MarketWatcherPlugin extends Plugin
 			items.addAll(tab.getItems());
 			tabs.remove(tab);
 			dataManager.saveData();
+			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -344,7 +390,7 @@ public class MarketWatcherPlugin extends Plugin
 			item.setGePrice(itemManager.getItemPrice(item.getItemId()));
 		}
 
-		if(panel != null)
+		if (panel != null)
 		{
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		}
@@ -372,6 +418,7 @@ public class MarketWatcherPlugin extends Plugin
 			{
 				tab.setName(tabName);
 				dataManager.saveData();
+				processPendingConfigChanges();
 				SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 			}
 		});
@@ -389,32 +436,18 @@ public class MarketWatcherPlugin extends Plugin
 		return items.contains(newItem);
 	}
 
-	private void retrieveItemPriceHistories(String timePeriod) throws Exception
+	private void retrieveItemPriceHistories(PricePeriodType periodType, int periodQty, String periodNumber) throws Exception
 	{
 		String resp = EMPTY_STRING;
 
 		long unixTimestamp = Instant.now().getEpochSecond();
 		String unixTimeString = EMPTY_STRING;
 
-		if (timePeriod.equals(ONE_WEEK))
-		{
-			long oneWeekAgo = (unixTimestamp - UNIX_WEEK);
-			long timeBuffer = (oneWeekAgo % SECONDS_IN_SIX_HOURS);
+		long periodDifference = (unixTimestamp - typeMap.get(periodType) * periodQty);
 
-			unixTimeString = String.valueOf(oneWeekAgo - timeBuffer);
-		}
-		else if (timePeriod.equals(ONE_MONTH))
-		{
-			long oneMonthAgo = (unixTimestamp - UNIX_MONTH);
-			long timeBuffer = (oneMonthAgo % SECONDS_IN_SIX_HOURS);
-			unixTimeString = String.valueOf(oneMonthAgo - timeBuffer);
-		}
-		else if (timePeriod.equals(THREE_MONTHS))
-		{
-			long threeMonthsAgo = (unixTimestamp - UNIX_MONTH * 3);
-			long timeBuffer = (threeMonthsAgo % SECONDS_IN_SIX_HOURS);
-			unixTimeString = String.valueOf(threeMonthsAgo - timeBuffer);
-		}
+		long periodTimeBuffer = periodDifference % SECONDS_IN_SIX_HOURS;
+
+		unixTimeString = String.valueOf(periodDifference - periodTimeBuffer);
 
 		Request request = new Request.Builder()
 			.url(OSRS_WIKI_PRICES_6H_REQUEST_URL + unixTimeString)
@@ -463,18 +496,97 @@ public class MarketWatcherPlugin extends Plugin
 			if (timeFrameValuesMapping == null)
 			{
 				Map<String, String> timeFrameValues = new HashMap<>();
-				timeFrameValues.put(timePeriod + LOW, lowPrice);
-				timeFrameValues.put(timePeriod + MED, medPrice);
-				timeFrameValues.put(timePeriod + HIGH, highPrice);
+				timeFrameValues.put(periodNumber + LOW, lowPrice);
+				timeFrameValues.put(periodNumber + MED, medPrice);
+				timeFrameValues.put(periodNumber + HIGH, highPrice);
 				itemPriceMap.put(currentID, timeFrameValues);
 			}
 			else
 			{
-				timeFrameValuesMapping.put(timePeriod + LOW, lowPrice);
-				timeFrameValuesMapping.put(timePeriod + MED, medPrice);
-				timeFrameValuesMapping.put(timePeriod + HIGH, highPrice);
+				timeFrameValuesMapping.put(periodNumber + LOW, lowPrice);
+				timeFrameValuesMapping.put(periodNumber + MED, medPrice);
+				timeFrameValuesMapping.put(periodNumber + HIGH, highPrice);
 			}
 
 		}
+	}
+
+	private void updateCachedConfigs()
+	{
+		configPricePeriodOneQty = config.pricePeriodOneQty();
+		configPricePeriodTwoQty = config.pricePeriodTwoQty();
+		configPricePeriodThreeQty = config.pricePeriodThreeQty();
+
+		configPeriodOneType = config.pricePeriodOneType();
+		configPeriodTwoType = config.pricePeriodTwoType();
+		configPeriodThreeType = config.pricePeriodThreeType();
+
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event)
+	{
+		// Exit if the plugin is off or the config is unrelated to the plugin
+		if (!isActive || !event.getGroup().equals(CONFIG_GROUP))
+		{
+			return;
+		}
+
+		pendingConfigChanges.add(event.getKey());
+	}
+
+
+	private void processPendingConfigChanges()
+	{
+		clientThread.invoke(() -> {
+			if (pendingConfigChanges.isEmpty())
+			{
+				return;
+			}
+
+			try
+			{
+				synchronized (this)
+				{
+					updateCachedConfigs();
+
+					log.debug("Processing {} pending config changes: {}", pendingConfigChanges.size(), pendingConfigChanges);
+
+					boolean refetchData = false;
+
+
+					for (String key : pendingConfigChanges)
+					{
+						switch (key)
+						{
+							case PRICE_PERIOD_ONE_QUANTITY:
+							case PRICE_PERIOD_ONE_TYPE:
+							case PRICE_PERIOD_TWO_QUANTITY:
+							case PRICE_PERIOD_TWO_TYPE:
+							case PRICE_PERIOD_THREE_QUANTITY:
+							case PRICE_PERIOD_THREE_TYPE:
+							case AUTO_REFRESH_INTERVAL:
+								refetchData = true;
+								break;
+						}
+					}
+
+					if (refetchData)
+					{
+						fetchItemData();
+						clientThread.invokeLater(() -> dataManager.loadData());
+						SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
+					}
+				}
+			}
+			catch (Throwable ex)
+			{
+				log.error("Error while changing settings:", ex);
+			}
+			finally
+			{
+				pendingConfigChanges.clear();
+			}
+		});
 	}
 }

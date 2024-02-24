@@ -43,6 +43,7 @@ public final class Constants
 	public static final String STANDARD = "Standard";
 	public static final String COMPACT = "Compact";
 
+	public static final int UNIX_DAY = 86400;
 	public static final int UNIX_WEEK = 604800;
 
 	public static final int UNIX_MONTH = 2592000;
@@ -66,6 +67,16 @@ public final class Constants
 	public static final String THREE_MONTHS_LOW = "threeMonthsLow";
 	public static final String THREE_MONTHS_MED = "threeMonthsMed";
 	public static final String THREE_MONTHS_HIGH = "threeMonthsHigh";
+
+	public static final String PERIOD_ONE_LOW = "period1Low";
+	public static final String PERIOD_ONE_MED = "period1Med";
+	public static final String PERIOD_ONE_HIGH = "period1High";
+	public static final String PERIOD_TWO_LOW = "period2Low";
+	public static final String PERIOD_TWO_MED = "period2Med";
+	public static final String PERIOD_TWO_HIGH = "period2High";
+	public static final String PERIOD_THREE_LOW = "period3Low";
+	public static final String PERIOD_THREE_MED = "period3Med";
+	public static final String PERIOD_THREE_HIGH = "period3High";
 	public static final String GP = " gp";
 
 	public static final String OSRS_WIKI_PRICES_6H_REQUEST_URL = "https://prices.runescape.wiki/api/v1/osrs/6h?timestamp=";

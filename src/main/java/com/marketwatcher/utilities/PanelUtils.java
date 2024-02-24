@@ -24,6 +24,7 @@
  */
 package com.marketwatcher.utilities;
 
+import com.marketwatcher.MarketWatcherPlugin;
 import com.marketwatcher.data.MarketWatcherItem;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.QuantityFormatter;
@@ -42,7 +43,7 @@ public final class PanelUtils
 	{
 	}
 
-	public static JPanel createRightPanel(MarketWatcherItem item, String viewType)
+	public static JPanel createRightPanel(MarketWatcherItem item, MarketWatcherPlugin plugin,  String viewType)
 	{
 		// Image
 		JLabel itemImage = new JLabel();
@@ -50,19 +51,19 @@ public final class PanelUtils
 		itemImage.setPreferredSize(new Dimension(32, 32));
 		itemImage.setMaximumSize(new Dimension(32, 32));
 
-		String weekLow = item.getOneWeekLow();
-		String weekMed = item.getOneWeekMed();
-		String weekHigh = item.getOneWeekHigh();
-		String monthLow = item.getOneMonthLow();
-		String monthMed = item.getOneMonthMed();
-		String monthHigh = item.getOneMonthHigh();
-		String threeMonthLow = item.getThreeMonthLow();
-		String threeMonthMed = item.getThreeMonthMed();
-		String threeMonthHigh = item.getThreeMonthHigh();
+		String periodOneLow = item.getPeriodOneLow();
+		String periodOneMed = item.getPeriodOneMed();
+		String periodOneHigh = item.getPeriodOneHigh();
+		String periodTwoLow = item.getPeriodTwoLow();
+		String periodTwoMed = item.getPeriodTwoMed();
+		String periodTwoHigh = item.getPeriodTwoHigh();
+		String periodThreeLow = item.getPeriodThreeLow();
+		String periodThreeMed = item.getPeriodThreeMed();
+		String periodThreeHigh = item.getPeriodThreeHigh();
 
-		String[] weekPrices = manageItemPrices(weekLow, weekMed, weekHigh, viewType);
-		String[] monthPrices = manageItemPrices(monthLow, monthMed, monthHigh, viewType);
-		String[] threeMonthPrices = manageItemPrices(threeMonthLow, threeMonthMed, threeMonthHigh, viewType);
+		String[] periodOnePrices = manageItemPrices(periodOneLow, periodOneMed, periodOneHigh, viewType);
+		String[] periodTwoPrices = manageItemPrices(periodTwoLow, periodTwoMed, periodTwoHigh, viewType);
+		String[] periodThreePrices = manageItemPrices(periodThreeLow, periodThreeMed, periodThreeHigh, viewType);
 
 		if (item.getImage() != null)
 		{
@@ -110,85 +111,100 @@ public final class PanelUtils
 		JLabel timeType = new JLabel();
 
 		timeType.setForeground(Color.WHITE);
-		timeType.setText("1W:");
-		timeType.setToolTipText("1 Week");
+
+		int periodOneQty = plugin.configPricePeriodOneQty;
+		String periodOneType = plugin.configPeriodOneType.name();
+
+		timeType.setText(Integer.toString(periodOneQty) + periodOneType.charAt(0) + ":");
+		timeType.setToolTipText(Integer.toString(periodOneQty) + " " + periodOneType);
 		rightPanel.add(timeType, getGbc(gbc, 0, 2, 1, 1, 0, 0, new Insets(5, 0, topBottomInset, 0)));
 
-		JLabel lowWeekPrice = new JLabel();
+		JLabel lowPeriodOnePrice = new JLabel();
 
-		lowWeekPrice.setForeground(Color.GREEN);
-		lowWeekPrice.setText(weekPrices[0]);
-		lowWeekPrice.setToolTipText(formatTooltip(weekLow));
-		rightPanel.add(lowWeekPrice, getGbc(gbc, 1, 2, 1, 1, 0, 0, new Insets(5, 0, topBottomInset, 0)));
+		lowPeriodOnePrice.setForeground(Color.GREEN);
+		lowPeriodOnePrice.setText(periodOnePrices[0]);
+		lowPeriodOnePrice.setToolTipText(formatTooltip(periodOneLow));
+		rightPanel.add(lowPeriodOnePrice, getGbc(gbc, 1, 2, 1, 1, 0, 0, new Insets(5, 0, topBottomInset, 0)));
 
-		JLabel medWeekPrice = new JLabel();
+		JLabel medPeriodOnePrice = new JLabel();
 
-		medWeekPrice.setForeground(Color.YELLOW);
-		medWeekPrice.setText(weekPrices[1]);
-		medWeekPrice.setToolTipText(formatTooltip(weekMed));
-		rightPanel.add(medWeekPrice, getGbc(gbc, 2, 2, 1, 1, 0, 0, new Insets(5, 3, topBottomInset, 3)));
-		JLabel highWeekPrice = new JLabel();
+		medPeriodOnePrice.setForeground(Color.YELLOW);
+		medPeriodOnePrice.setText(periodOnePrices[1]);
+		medPeriodOnePrice.setToolTipText(formatTooltip(periodOneMed));
+		rightPanel.add(medPeriodOnePrice, getGbc(gbc, 2, 2, 1, 1, 0, 0, new Insets(5, 3, topBottomInset, 3)));
+		JLabel highPeriodOnePrice = new JLabel();
 
-		highWeekPrice.setForeground(Color.RED);
-		highWeekPrice.setText(weekPrices[2]);
-		highWeekPrice.setToolTipText(formatTooltip(weekHigh));
-		rightPanel.add(highWeekPrice, getGbc(gbc, 3, 2, 1, 1, 0, 0, new Insets(5, 0, topBottomInset, 0)));
+		highPeriodOnePrice.setForeground(Color.RED);
+		highPeriodOnePrice.setText(periodOnePrices[2]);
+		highPeriodOnePrice.setToolTipText(formatTooltip(periodOneHigh));
+		rightPanel.add(highPeriodOnePrice, getGbc(gbc, 3, 2, 1, 1, 0, 0, new Insets(5, 0, topBottomInset, 0)));
 
 		JLabel timeType2 = new JLabel();
 
 		timeType2.setForeground(Color.WHITE);
-		timeType2.setText("1M:");
-		timeType2.setToolTipText("1 Month");
+
+
+		int periodTwoQty = plugin.configPricePeriodTwoQty;
+		String periodTwoType = plugin.configPeriodTwoType.name();
+
+		timeType2.setText(Integer.toString(periodTwoQty) + periodTwoType.charAt(0) + ":");
+		timeType2.setToolTipText(Integer.toString(periodTwoQty) + " " + periodTwoType);
+
 		rightPanel.add(timeType2, getGbc(gbc, 0, 3, 1, 1, 0, 0, new Insets(topBottomInset, 0, topBottomInset, 0)));
 
-		JLabel lowMonthPrice = new JLabel();
+		JLabel lowPeriodTwoPrice = new JLabel();
 
-		lowMonthPrice.setForeground(Color.GREEN);
-		lowMonthPrice.setText(monthPrices[0]);
-		lowMonthPrice.setToolTipText(formatTooltip(monthLow));
-		rightPanel.add(lowMonthPrice, getGbc(gbc, 1, 3, 1, 1, 0, 0, lowHighPriceInsets));
+		lowPeriodTwoPrice.setForeground(Color.GREEN);
+		lowPeriodTwoPrice.setText(periodTwoPrices[0]);
+		lowPeriodTwoPrice.setToolTipText(formatTooltip(periodTwoLow));
+		rightPanel.add(lowPeriodTwoPrice, getGbc(gbc, 1, 3, 1, 1, 0, 0, lowHighPriceInsets));
 
-		JLabel medMonthPrice = new JLabel();
+		JLabel medPeriodTwoPrice = new JLabel();
 
-		medMonthPrice.setForeground(Color.YELLOW);
-		medMonthPrice.setText(monthPrices[1]);
-		medMonthPrice.setToolTipText(formatTooltip(monthMed));
-		rightPanel.add(medMonthPrice, getGbc(gbc, 2, 3, 1, 1, 0, 0, medPriceInsets));
+		medPeriodTwoPrice.setForeground(Color.YELLOW);
+		medPeriodTwoPrice.setText(periodTwoPrices[1]);
+		medPeriodTwoPrice.setToolTipText(formatTooltip(periodTwoMed));
+		rightPanel.add(medPeriodTwoPrice, getGbc(gbc, 2, 3, 1, 1, 0, 0, medPriceInsets));
 
-		JLabel highMonthPrice = new JLabel();
+		JLabel highPeriodTwoPrice = new JLabel();
 
-		highMonthPrice.setForeground(Color.RED);
-		highMonthPrice.setText(monthPrices[2]);
-		highMonthPrice.setToolTipText(formatTooltip(monthHigh));
-		rightPanel.add(highMonthPrice, getGbc(gbc, 3, 3, 1, 1, 0, 0, lowHighPriceInsets));
+		highPeriodTwoPrice.setForeground(Color.RED);
+		highPeriodTwoPrice.setText(periodTwoPrices[2]);
+		highPeriodTwoPrice.setToolTipText(formatTooltip(periodTwoHigh));
+		rightPanel.add(highPeriodTwoPrice, getGbc(gbc, 3, 3, 1, 1, 0, 0, lowHighPriceInsets));
 
 		JLabel timeType3 = new JLabel();
 
 		timeType3.setForeground(Color.WHITE);
-		timeType3.setText("3M:");
-		timeType3.setToolTipText("3 Months");
+
+		int periodThreeQty = plugin.configPricePeriodThreeQty;
+		String periodThreeType = plugin.configPeriodThreeType.name();
+
+		timeType3.setText(Integer.toString(periodThreeQty) + periodThreeType.charAt(0) + ":");
+		timeType3.setToolTipText(Integer.toString(periodThreeQty) + " " + periodThreeType);
+
 		rightPanel.add(timeType3, getGbc(gbc, 0, 4, 1, 1, 0, 0, new Insets(topBottomInset, 0, topBottomInset, 0)));
 
-		JLabel low3MonthPrice = new JLabel();
+		JLabel lowPeriodThreePrice = new JLabel();
 
-		low3MonthPrice.setForeground(Color.GREEN);
-		low3MonthPrice.setText(threeMonthPrices[0]);
-		low3MonthPrice.setToolTipText(formatTooltip(threeMonthLow));
-		rightPanel.add(low3MonthPrice, getGbc(gbc, 1, 4, 1, 1, 0, 0, lowHighPriceInsets));
+		lowPeriodThreePrice.setForeground(Color.GREEN);
+		lowPeriodThreePrice.setText(periodThreePrices[0]);
+		lowPeriodThreePrice.setToolTipText(formatTooltip(periodThreeLow));
+		rightPanel.add(lowPeriodThreePrice, getGbc(gbc, 1, 4, 1, 1, 0, 0, lowHighPriceInsets));
 
-		JLabel med3MonthPrice = new JLabel();
+		JLabel medPeriodThreePrice = new JLabel();
 
-		med3MonthPrice.setForeground(Color.YELLOW);
-		med3MonthPrice.setText(threeMonthPrices[1]);
-		med3MonthPrice.setToolTipText(formatTooltip(threeMonthMed));
-		rightPanel.add(med3MonthPrice, getGbc(gbc, 2, 4, 1, 1, 0, 0, medPriceInsets));
+		medPeriodThreePrice.setForeground(Color.YELLOW);
+		medPeriodThreePrice.setText(periodThreePrices[1]);
+		medPeriodThreePrice.setToolTipText(formatTooltip(periodThreeMed));
+		rightPanel.add(medPeriodThreePrice, getGbc(gbc, 2, 4, 1, 1, 0, 0, medPriceInsets));
 
-		JLabel high3MonthPrice = new JLabel();
+		JLabel highPeriodThreePrice = new JLabel();
 
-		high3MonthPrice.setForeground(Color.RED);
-		high3MonthPrice.setText(threeMonthPrices[2]);
-		high3MonthPrice.setToolTipText(formatTooltip(threeMonthHigh));
-		rightPanel.add(high3MonthPrice, getGbc(gbc, 3, 4, 1, 1, 0, 0, lowHighPriceInsets));
+		highPeriodThreePrice.setForeground(Color.RED);
+		highPeriodThreePrice.setText(periodThreePrices[2]);
+		highPeriodThreePrice.setToolTipText(formatTooltip(periodThreeHigh));
+		rightPanel.add(highPeriodThreePrice, getGbc(gbc, 3, 4, 1, 1, 0, 0, lowHighPriceInsets));
 
 		return rightPanel;
 	}

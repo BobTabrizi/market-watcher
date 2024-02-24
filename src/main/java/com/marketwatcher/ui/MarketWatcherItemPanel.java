@@ -74,7 +74,7 @@ public class MarketWatcherItemPanel extends JPanel
 		int itemIndex = plugin.getItems().indexOf(item);
 		int itemsSize = plugin.getItems().size();
 
-		JPanel rightPanel = createRightPanel(item, STANDARD);
+		JPanel rightPanel = createRightPanel(item, plugin, STANDARD);
 
 		// Action Panel (Delete, Shift item)
 		JPanel actionPanel = new JPanel(new BorderLayout());

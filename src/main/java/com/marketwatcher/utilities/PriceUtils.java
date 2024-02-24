@@ -194,34 +194,34 @@ public final class PriceUtils
 
 	public static MarketWatcherItem createMarketWatchItemWithPriceMap(AsyncBufferedImage itemImage, String itemName, int itemId, int itemPrice, Map<String, String> itemPriceMap)
 	{
-		String oneWeekLow = NOT_AVAILABLE;
-		String oneWeekMed = NOT_AVAILABLE;
-		String oneWeekHigh = NOT_AVAILABLE;
+		String periodOneLow = NOT_AVAILABLE;
+		String periodOneMed = NOT_AVAILABLE;
+		String periodOneHigh = NOT_AVAILABLE;
 
-		String oneMonthLow = NOT_AVAILABLE;
-		String oneMonthMed = NOT_AVAILABLE;
-		String oneMonthHigh = NOT_AVAILABLE;
+		String periodTwoLow = NOT_AVAILABLE;
+		String periodTwoMed = NOT_AVAILABLE;
+		String periodTwoHigh = NOT_AVAILABLE;
 
-		String threeMonthLow = NOT_AVAILABLE;
-		String threeMonthMed = NOT_AVAILABLE;
-		String threeMonthHigh = NOT_AVAILABLE;
+		String periodThreeLow = NOT_AVAILABLE;
+		String periodThreeMed = NOT_AVAILABLE;
+		String periodThreeHigh = NOT_AVAILABLE;
 
 		if (itemPriceMap != null)
 		{
-			oneWeekLow = itemPriceMap.get(ONE_WEEK_LOW) != null ? itemPriceMap.get(ONE_WEEK_LOW) : NOT_AVAILABLE;
-			oneWeekMed = itemPriceMap.get(ONE_WEEK_MED) != null ? itemPriceMap.get(ONE_WEEK_MED) : NOT_AVAILABLE;
-			oneWeekHigh = itemPriceMap.get(ONE_WEEK_HIGH) != null ? itemPriceMap.get(ONE_WEEK_HIGH) : NOT_AVAILABLE;
+			periodOneLow = itemPriceMap.get(PERIOD_ONE_LOW) != null ? itemPriceMap.get(PERIOD_ONE_LOW) : NOT_AVAILABLE;
+			periodOneMed = itemPriceMap.get(PERIOD_ONE_MED) != null ? itemPriceMap.get(PERIOD_ONE_MED) : NOT_AVAILABLE;
+			periodOneHigh = itemPriceMap.get(PERIOD_ONE_HIGH) != null ? itemPriceMap.get(PERIOD_ONE_HIGH) : NOT_AVAILABLE;
 
-			oneMonthLow = itemPriceMap.get(ONE_MONTH_LOW) != null ? itemPriceMap.get(ONE_MONTH_LOW) : NOT_AVAILABLE;
-			oneMonthMed = itemPriceMap.get(ONE_MONTH_MED) != null ? itemPriceMap.get(ONE_MONTH_MED) : NOT_AVAILABLE;
-			oneMonthHigh = itemPriceMap.get(ONE_MONTH_HIGH) != null ? itemPriceMap.get(ONE_MONTH_HIGH) : NOT_AVAILABLE;
+			periodTwoLow = itemPriceMap.get(PERIOD_TWO_LOW) != null ? itemPriceMap.get(PERIOD_TWO_LOW) : NOT_AVAILABLE;
+			periodTwoMed = itemPriceMap.get(PERIOD_TWO_MED) != null ? itemPriceMap.get(PERIOD_TWO_MED) : NOT_AVAILABLE;
+			periodTwoHigh = itemPriceMap.get(PERIOD_TWO_HIGH) != null ? itemPriceMap.get(PERIOD_TWO_HIGH) : NOT_AVAILABLE;
 
-			threeMonthLow = itemPriceMap.get(THREE_MONTHS_LOW) != null ? itemPriceMap.get(THREE_MONTHS_LOW) : NOT_AVAILABLE;
-			threeMonthMed = itemPriceMap.get(THREE_MONTHS_MED) != null ? itemPriceMap.get(THREE_MONTHS_MED) : NOT_AVAILABLE;
-			threeMonthHigh = itemPriceMap.get(THREE_MONTHS_HIGH) != null ? itemPriceMap.get(THREE_MONTHS_HIGH) : NOT_AVAILABLE;
+			periodThreeLow = itemPriceMap.get(PERIOD_THREE_LOW) != null ? itemPriceMap.get(PERIOD_THREE_LOW) : NOT_AVAILABLE;
+			periodThreeMed = itemPriceMap.get(PERIOD_THREE_MED) != null ? itemPriceMap.get(PERIOD_THREE_MED) : NOT_AVAILABLE;
+			periodThreeHigh = itemPriceMap.get(PERIOD_THREE_HIGH) != null ? itemPriceMap.get(PERIOD_THREE_HIGH) : NOT_AVAILABLE;
 		}
 
-		return new MarketWatcherItem(itemImage, itemName, itemId, itemPrice, oneWeekLow, oneWeekMed, oneWeekHigh, oneMonthLow, oneMonthMed, oneMonthHigh, threeMonthLow, threeMonthMed, threeMonthHigh);
+		return new MarketWatcherItem(itemImage, itemName, itemId, itemPrice, periodOneLow, periodOneMed, periodOneHigh, periodTwoLow, periodTwoMed, periodTwoHigh, periodThreeLow, periodThreeMed, periodThreeHigh);
 	}
 
 

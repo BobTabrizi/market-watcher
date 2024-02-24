@@ -75,7 +75,7 @@ public class MarketWatcherTabItemPanel extends JPanel
 		int itemIndex = tab.getItems().indexOf(item);
 		int itemsSize = tab.getItems().size();
 
-		JPanel rightPanel = createRightPanel(item, COMPACT);
+		JPanel rightPanel = createRightPanel(item, plugin, COMPACT);
 
 		// Action Panel (Delete, Shift item)
 		JPanel actionPanel = new JPanel(new BorderLayout());
