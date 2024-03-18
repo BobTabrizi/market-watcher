@@ -6,28 +6,40 @@ Watches market prices of items using OSRS Wiki Prices: https://prices.runescape.
 
 Search for items to track and optionally add items to tabs to group them together.
 
-Each item displays prices for the following time periods up to the current date:
+Each item displays prices for three time periods up to the current date:
 
-Default:
+Default Time Periods:
 - 1 Week
 - 1 Month
 - 3 Months
 
 ### Configuration
-
-##### Each of the three time periods can be configured in the user configuration settings.
-##### There is also an option to increase or decrease the interval at which the item price data is automatically refreshed
+- Increase or decrease the interval at which the item price data is automatically refreshed
+  - Minimum Value: 6 Hours
+  - Maximum Value: 24 Hours
+- Colorblind Mode
+  - Changes the price colors to be more colorblind friendly.
+- Configure each of the three time periods to be days, weeks or months.
+  - Minimum Values: 1 Day, 1 Week, or 1 Month
+  - Maximum Values: 24 Days, 24 Weeks, or 24 Months
 
 ![Config Image](docs/MarketWatcherConfigImage.png)
 
 
 ### Color Legend
-
 | Price Type | Color     |
 |------------|-----------|
 | Low        | Green 🟢  |
 | Medium     | Yellow 🟡 |
 | High       | Red 🔴    |
+
+### Color Legend (Colorblind Mode)
+
+| Price Type |       Color        |
+|------------|--------------------|
+| Low        | rgb(136, 204, 238) |
+| Medium     | rgb(221, 204, 119) |
+| High       | rgb(170, 68, 153)  |
 
 ### Sample Panel Images
 
