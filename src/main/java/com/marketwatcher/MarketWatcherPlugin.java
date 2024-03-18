@@ -308,7 +308,7 @@ public class MarketWatcherPlugin extends Plugin
 	{
 		processPendingConfigChanges();
 		SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
-		JOptionPane.showMessageDialog(panel, "Each item displays price history with three price periods. Periods can be configured in plugin settings\nFor each time period, the price lows, averages, and highs are color coded in rows. \nGreen numbers are lows. Yellow numbers are averages. Red numbers are highs.", "Information", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(panel, "Each item displays price history with three price periods. Periods can be configured in plugin settings\nFor each time period, the price lows, mediums, and highs are color coded in rows. \nLows are the left number. Mediums are the center number. Highs are the right number.", "Information", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	public void shiftItem(int itemIndex, boolean shiftUp)
