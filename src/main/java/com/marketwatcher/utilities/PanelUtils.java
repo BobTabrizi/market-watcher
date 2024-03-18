@@ -26,6 +26,9 @@ package com.marketwatcher.utilities;
 
 import com.marketwatcher.MarketWatcherPlugin;
 import com.marketwatcher.data.MarketWatcherItem;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.Cursor;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.QuantityFormatter;
 
@@ -43,7 +46,7 @@ public final class PanelUtils
 	{
 	}
 
-	public static JPanel createRightPanel(MarketWatcherItem item, MarketWatcherPlugin plugin,  String viewType)
+	public static JPanel createRightPanel(MarketWatcherItem item, MarketWatcherPlugin plugin, String viewType)
 	{
 		// Image
 		JLabel itemImage = new JLabel();
@@ -69,6 +72,29 @@ public final class PanelUtils
 		{
 			item.getImage().addTo(itemImage);
 		}
+
+		itemImage.setToolTipText("Open Wiki Price Page");
+		itemImage.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				itemImage.setCursor(new Cursor(Cursor.HAND_CURSOR));
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				itemImage.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e)
+			{
+				plugin.openWikiPriceLink(item.getItemId());
+			}
+		});
+
 
 		GridBagConstraints gbc = new GridBagConstraints();
 		// Item Details Panel
@@ -121,22 +147,27 @@ public final class PanelUtils
 
 		JLabel lowPeriodOnePrice = new JLabel();
 
-		lowPeriodOnePrice.setForeground(Color.GREEN);
+		boolean isColorBlindMode = plugin.getConfig().colorBlindMode();
+		Color lowColor = isColorBlindMode ? new Color(136, 204, 238) : Color.GREEN;
+		Color medColor = isColorBlindMode ? new Color(221, 204, 119) : Color.YELLOW;
+		Color highColor = isColorBlindMode ? new Color(170, 68, 153) : Color.RED;
+
+		lowPeriodOnePrice.setForeground(lowColor);
 		lowPeriodOnePrice.setText(periodOnePrices[0]);
-		lowPeriodOnePrice.setToolTipText(formatTooltip(periodOneLow));
+		lowPeriodOnePrice.setToolTipText(LOW + ": " + formatTooltip(periodOneLow));
 		rightPanel.add(lowPeriodOnePrice, getGbc(gbc, 1, 2, 1, 1, 0, 0, new Insets(5, 0, topBottomInset, 0)));
 
 		JLabel medPeriodOnePrice = new JLabel();
 
-		medPeriodOnePrice.setForeground(Color.YELLOW);
+		medPeriodOnePrice.setForeground(medColor);
 		medPeriodOnePrice.setText(periodOnePrices[1]);
-		medPeriodOnePrice.setToolTipText(formatTooltip(periodOneMed));
+		medPeriodOnePrice.setToolTipText(MED + ": " + formatTooltip(periodOneMed));
 		rightPanel.add(medPeriodOnePrice, getGbc(gbc, 2, 2, 1, 1, 0, 0, new Insets(5, 3, topBottomInset, 3)));
 		JLabel highPeriodOnePrice = new JLabel();
 
-		highPeriodOnePrice.setForeground(Color.RED);
+		highPeriodOnePrice.setForeground(highColor);
 		highPeriodOnePrice.setText(periodOnePrices[2]);
-		highPeriodOnePrice.setToolTipText(formatTooltip(periodOneHigh));
+		highPeriodOnePrice.setToolTipText(HIGH + ": " + formatTooltip(periodOneHigh));
 		rightPanel.add(highPeriodOnePrice, getGbc(gbc, 3, 2, 1, 1, 0, 0, new Insets(5, 0, topBottomInset, 0)));
 
 		JLabel timeType2 = new JLabel();
@@ -154,23 +185,23 @@ public final class PanelUtils
 
 		JLabel lowPeriodTwoPrice = new JLabel();
 
-		lowPeriodTwoPrice.setForeground(Color.GREEN);
+		lowPeriodTwoPrice.setForeground(lowColor);
 		lowPeriodTwoPrice.setText(periodTwoPrices[0]);
-		lowPeriodTwoPrice.setToolTipText(formatTooltip(periodTwoLow));
+		lowPeriodTwoPrice.setToolTipText(LOW + ": " + formatTooltip(periodTwoLow));
 		rightPanel.add(lowPeriodTwoPrice, getGbc(gbc, 1, 3, 1, 1, 0, 0, lowHighPriceInsets));
 
 		JLabel medPeriodTwoPrice = new JLabel();
 
-		medPeriodTwoPrice.setForeground(Color.YELLOW);
+		medPeriodTwoPrice.setForeground(medColor);
 		medPeriodTwoPrice.setText(periodTwoPrices[1]);
-		medPeriodTwoPrice.setToolTipText(formatTooltip(periodTwoMed));
+		medPeriodTwoPrice.setToolTipText(MED + ": " + formatTooltip(periodTwoMed));
 		rightPanel.add(medPeriodTwoPrice, getGbc(gbc, 2, 3, 1, 1, 0, 0, medPriceInsets));
 
 		JLabel highPeriodTwoPrice = new JLabel();
 
-		highPeriodTwoPrice.setForeground(Color.RED);
+		highPeriodTwoPrice.setForeground(highColor);
 		highPeriodTwoPrice.setText(periodTwoPrices[2]);
-		highPeriodTwoPrice.setToolTipText(formatTooltip(periodTwoHigh));
+		highPeriodTwoPrice.setToolTipText(HIGH + ": " + formatTooltip(periodTwoHigh));
 		rightPanel.add(highPeriodTwoPrice, getGbc(gbc, 3, 3, 1, 1, 0, 0, lowHighPriceInsets));
 
 		JLabel timeType3 = new JLabel();
@@ -187,23 +218,23 @@ public final class PanelUtils
 
 		JLabel lowPeriodThreePrice = new JLabel();
 
-		lowPeriodThreePrice.setForeground(Color.GREEN);
+		lowPeriodThreePrice.setForeground(lowColor);
 		lowPeriodThreePrice.setText(periodThreePrices[0]);
-		lowPeriodThreePrice.setToolTipText(formatTooltip(periodThreeLow));
+		lowPeriodThreePrice.setToolTipText(LOW + ": " + formatTooltip(periodThreeLow));
 		rightPanel.add(lowPeriodThreePrice, getGbc(gbc, 1, 4, 1, 1, 0, 0, lowHighPriceInsets));
 
 		JLabel medPeriodThreePrice = new JLabel();
 
-		medPeriodThreePrice.setForeground(Color.YELLOW);
+		medPeriodThreePrice.setForeground(medColor);
 		medPeriodThreePrice.setText(periodThreePrices[1]);
-		medPeriodThreePrice.setToolTipText(formatTooltip(periodThreeMed));
+		medPeriodThreePrice.setToolTipText(MED + ": " + formatTooltip(periodThreeMed));
 		rightPanel.add(medPeriodThreePrice, getGbc(gbc, 2, 4, 1, 1, 0, 0, medPriceInsets));
 
 		JLabel highPeriodThreePrice = new JLabel();
 
-		highPeriodThreePrice.setForeground(Color.RED);
+		highPeriodThreePrice.setForeground(highColor);
 		highPeriodThreePrice.setText(periodThreePrices[2]);
-		highPeriodThreePrice.setToolTipText(formatTooltip(periodThreeHigh));
+		highPeriodThreePrice.setToolTipText(HIGH + ": " + formatTooltip(periodThreeHigh));
 		rightPanel.add(highPeriodThreePrice, getGbc(gbc, 3, 4, 1, 1, 0, 0, lowHighPriceInsets));
 
 		return rightPanel;

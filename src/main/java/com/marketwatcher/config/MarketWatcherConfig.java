@@ -22,7 +22,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.marketwatcher.utilities;
+package com.marketwatcher.config;
 
 
 import com.marketwatcher.MarketWatcherPlugin;
@@ -44,6 +44,7 @@ public interface MarketWatcherConfig extends Config
 	)
 	String generalSettings = "generalSettings";
 	String AUTO_REFRESH_INTERVAL = "autoRefreshInterval";
+
 	@ConfigItem(
 		keyName = AUTO_REFRESH_INTERVAL,
 		name = "Auto Refresh Interval",
@@ -51,11 +52,26 @@ public interface MarketWatcherConfig extends Config
 		position = 0,
 		section = generalSettings
 	)
-	@Range(min= 6, max = 24)
+	@Range(min = 6, max = 24)
 	@Units(" hours")
 	default int refreshInterval()
 	{
 		return 12;
+	}
+
+	String COLOR_BLIND_MODE = "colorBlindMode";
+
+	@ConfigItem(
+		keyName = COLOR_BLIND_MODE,
+		name = "Color Blind Mode",
+		description = "Colorblind friendly prices",
+		position = 1,
+		section = generalSettings
+	)
+
+	default boolean colorBlindMode()
+	{
+		return false;
 	}
 
 
@@ -66,6 +82,7 @@ public interface MarketWatcherConfig extends Config
 		position = 1
 	)
 	String pricePeriodOne = "pricePeriodOne";
+
 	@ConfigItem(
 		keyName = PRICE_PERIOD_ONE_QUANTITY,
 		name = "Quantity",
@@ -73,13 +90,14 @@ public interface MarketWatcherConfig extends Config
 		position = 0,
 		section = pricePeriodOne
 	)
-	@Range(min= 1, max = 24)
+	@Range(min = 1, max = 24)
 	default int pricePeriodOneQty()
 	{
 		return 1;
 	}
 
 	String PRICE_PERIOD_ONE_TYPE = "pricePeriodOneType";
+
 	@ConfigItem(
 		keyName = PRICE_PERIOD_ONE_TYPE,
 		name = "Type",
@@ -89,7 +107,7 @@ public interface MarketWatcherConfig extends Config
 	)
 	default PricePeriodType pricePeriodOneType()
 	{
-		return PricePeriodType.DAYS;
+		return PricePeriodType.Days;
 	}
 
 	String PRICE_PERIOD_TWO_QUANTITY = "pricePeriodTwoQuantity";
@@ -99,6 +117,7 @@ public interface MarketWatcherConfig extends Config
 		position = 2
 	)
 	String pricePeriodTwo = "pricePeriodTwo";
+
 	@ConfigItem(
 		keyName = PRICE_PERIOD_TWO_QUANTITY,
 		name = "Quantity",
@@ -106,12 +125,14 @@ public interface MarketWatcherConfig extends Config
 		position = 0,
 		section = pricePeriodTwo
 	)
-	@Range(min= 1, max = 24)
+	@Range(min = 1, max = 24)
 	default int pricePeriodTwoQty()
 	{
 		return 3;
 	}
+
 	String PRICE_PERIOD_TWO_TYPE = "pricePeriodTwoType";
+
 	@ConfigItem(
 		keyName = PRICE_PERIOD_TWO_TYPE,
 		name = "Type",
@@ -121,8 +142,9 @@ public interface MarketWatcherConfig extends Config
 	)
 	default PricePeriodType pricePeriodTwoType()
 	{
-		return PricePeriodType.WEEKS;
+		return PricePeriodType.Weeks;
 	}
+
 	String PRICE_PERIOD_THREE_QUANTITY = "pricePeriodThreeQuantity";
 	@ConfigSection(
 		name = "Price Period 3",
@@ -130,6 +152,7 @@ public interface MarketWatcherConfig extends Config
 		position = 2
 	)
 	String pricePeriodThree = "pricePeriodThree";
+
 	@ConfigItem(
 		keyName = PRICE_PERIOD_THREE_QUANTITY,
 		name = "Quantity",
@@ -137,12 +160,14 @@ public interface MarketWatcherConfig extends Config
 		position = 0,
 		section = pricePeriodThree
 	)
-	@Range(min= 1, max = 24)
+	@Range(min = 1, max = 24)
 	default int pricePeriodThreeQty()
 	{
 		return 3;
 	}
+
 	String PRICE_PERIOD_THREE_TYPE = "pricePeriodThreeType";
+
 	@ConfigItem(
 		keyName = PRICE_PERIOD_THREE_TYPE,
 		name = "Type",
@@ -152,7 +177,7 @@ public interface MarketWatcherConfig extends Config
 	)
 	default PricePeriodType pricePeriodThreeType()
 	{
-		return PricePeriodType.MONTHS;
+		return PricePeriodType.Months;
 	}
 
 }

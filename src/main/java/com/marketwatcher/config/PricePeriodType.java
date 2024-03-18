@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum PricePeriodType
 {
-	DAYS,
-	WEEKS,
-	MONTHS
+	Days,
+	Weeks,
+	Months
 }

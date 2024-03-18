@@ -26,14 +26,14 @@ package com.marketwatcher;
 
 import com.google.inject.Provides;
 import com.marketwatcher.config.PricePeriodType;
-import com.marketwatcher.utilities.MarketWatcherConfig;
-import static com.marketwatcher.utilities.MarketWatcherConfig.AUTO_REFRESH_INTERVAL;
-import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_ONE_QUANTITY;
-import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_ONE_TYPE;
-import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_THREE_QUANTITY;
-import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_THREE_TYPE;
-import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_TWO_QUANTITY;
-import static com.marketwatcher.utilities.MarketWatcherConfig.PRICE_PERIOD_TWO_TYPE;
+import com.marketwatcher.config.MarketWatcherConfig;
+import static com.marketwatcher.config.MarketWatcherConfig.AUTO_REFRESH_INTERVAL;
+import static com.marketwatcher.config.MarketWatcherConfig.PRICE_PERIOD_ONE_QUANTITY;
+import static com.marketwatcher.config.MarketWatcherConfig.PRICE_PERIOD_ONE_TYPE;
+import static com.marketwatcher.config.MarketWatcherConfig.PRICE_PERIOD_THREE_QUANTITY;
+import static com.marketwatcher.config.MarketWatcherConfig.PRICE_PERIOD_THREE_TYPE;
+import static com.marketwatcher.config.MarketWatcherConfig.PRICE_PERIOD_TWO_QUANTITY;
+import static com.marketwatcher.config.MarketWatcherConfig.PRICE_PERIOD_TWO_TYPE;
 import com.marketwatcher.utilities.WikiItemDetails;
 import com.marketwatcher.utilities.WikiRequestResult;
 import java.util.concurrent.ConcurrentHashMap;
@@ -74,6 +74,7 @@ import net.runelite.client.util.ImageUtil;
 
 import lombok.Getter;
 import lombok.Setter;
+import net.runelite.client.util.LinkBrowser;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -114,7 +115,7 @@ public class MarketWatcherPlugin extends Plugin
 	Map<Integer, Map<String, String>> itemPriceMap = new HashMap<>();
 
 	private OkHttpClient okHttpClient;
-	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
 	private MarketWatcherPluginPanel panel;
 	@Inject
@@ -172,11 +173,11 @@ public class MarketWatcherPlugin extends Plugin
 	{
 		updateCachedConfigs();
 
-		typeMap.put(PricePeriodType.DAYS, UNIX_DAY);
-		typeMap.put(PricePeriodType.WEEKS, UNIX_WEEK);
-		typeMap.put(PricePeriodType.MONTHS, UNIX_MONTH);
+		typeMap.put(PricePeriodType.Days, UNIX_DAY);
+		typeMap.put(PricePeriodType.Weeks, UNIX_WEEK);
+		typeMap.put(PricePeriodType.Months, UNIX_MONTH);
 
-		fetchItemData();
+		refreshHandler = scheduler.scheduleAtFixedRate(dataRefresh, 0, config.refreshInterval(), TimeUnit.HOURS);
 
 		isActive = true;
 
@@ -191,10 +192,6 @@ public class MarketWatcherPlugin extends Plugin
 		this.dataManager = new MarketWatcherTabDataManager(this, client, configManager, itemManager, gson);
 
 		clientThread.invokeLater(() -> dataManager.loadData());
-
-		final int refreshInterval = config.refreshInterval();
-
-		refreshHandler = scheduler.scheduleAtFixedRate(dataRefresh, refreshInterval, refreshInterval, TimeUnit.DAYS);
 	}
 
 	@Override
@@ -310,6 +307,7 @@ public class MarketWatcherPlugin extends Plugin
 	public void showHelp()
 	{
 		processPendingConfigChanges();
+		SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		JOptionPane.showMessageDialog(panel, "Each item displays price history with three price periods. Periods can be configured in plugin settings\nFor each time period, the price lows, averages, and highs are color coded in rows. \nGreen numbers are lows. Yellow numbers are averages. Red numbers are highs.", "Information", JOptionPane.INFORMATION_MESSAGE);
 	}
 
@@ -421,6 +419,12 @@ public class MarketWatcherPlugin extends Plugin
 				SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 			}
 		});
+	}
+
+	public void openWikiPriceLink(int itemId)
+	{
+		final String url = OSRS_WIKI_ITEM_REQUEST_BASE_URL + itemId;
+		LinkBrowser.browse(url);
 	}
 
 	private boolean containsItem(MarketWatcherItem newItem)
@@ -549,7 +553,7 @@ public class MarketWatcherPlugin extends Plugin
 				{
 					updateCachedConfigs();
 
-					log.debug("Processing {} pending config changes: {}", pendingConfigChanges.size(), pendingConfigChanges);
+					log.debug("Processing {} pending Market Watcher config changes: {}", pendingConfigChanges.size(), pendingConfigChanges);
 
 					boolean refetchData = false;
 
@@ -572,7 +576,7 @@ public class MarketWatcherPlugin extends Plugin
 
 					if (refetchData)
 					{
-						fetchItemData();
+						scheduler.execute(dataRefresh);
 						clientThread.invokeLater(() -> dataManager.loadData());
 						SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 					}

@@ -58,16 +58,6 @@ public final class Constants
 	public static final String MED = "Med";
 	public static final String HIGH = "High";
 
-	public static final String ONE_WEEK_LOW = "oneWeekLow";
-	public static final String ONE_WEEK_MED = "oneWeekMed";
-	public static final String ONE_WEEK_HIGH = "oneWeekHigh";
-	public static final String ONE_MONTH_LOW = "oneMonthLow";
-	public static final String ONE_MONTH_MED = "oneMonthMed";
-	public static final String ONE_MONTH_HIGH = "oneMonthHigh";
-	public static final String THREE_MONTHS_LOW = "threeMonthsLow";
-	public static final String THREE_MONTHS_MED = "threeMonthsMed";
-	public static final String THREE_MONTHS_HIGH = "threeMonthsHigh";
-
 	public static final String PERIOD_ONE_LOW = "period1Low";
 	public static final String PERIOD_ONE_MED = "period1Med";
 	public static final String PERIOD_ONE_HIGH = "period1High";
@@ -80,6 +70,8 @@ public final class Constants
 	public static final String GP = " gp";
 
 	public static final String OSRS_WIKI_PRICES_6H_REQUEST_URL = "https://prices.runescape.wiki/api/v1/osrs/6h?timestamp=";
+
+	public static final String OSRS_WIKI_ITEM_REQUEST_BASE_URL = "https://prices.runescape.wiki/osrs/item/";
 	public static final String COMMA = ",";
 	public static final String EMPTY_STRING = "";
 
