@@ -274,12 +274,13 @@ public class MarketWatcherPluginPanel extends PluginPanel
 		// Market Watch Items Panel
 		marketWatcherItemsPanel.setLayout(new GridBagLayout());
 
-		JPanel pWrapper = new JPanel(new BorderLayout());
+		JPanel pWrapper = new NoHorizontalScrollPanel(new BorderLayout());
 		pWrapper.add(marketWatcherItemsPanel, BorderLayout.NORTH);
 
 		JScrollPane marketWrapper = new JScrollPane(pWrapper);
 		marketWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		marketWrapper.setBorder(new EmptyBorder(5, 0, 0, 0));
+		marketWrapper.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		marketWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(12, 0));
 		marketWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(5, 5, 0, 0));
 
@@ -289,12 +290,13 @@ public class MarketWatcherPluginPanel extends PluginPanel
 		// Search Results Panel
 		searchResultsPanel.setLayout(new GridBagLayout());
 
-		JPanel searchResultsWrapper = new JPanel(new BorderLayout());
+		JPanel searchResultsWrapper = new NoHorizontalScrollPanel(new BorderLayout());
 		searchResultsWrapper.add(searchResultsPanel, BorderLayout.NORTH);
 
 		JScrollPane resultsWrapper = new JScrollPane(searchResultsWrapper);
 		resultsWrapper.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		resultsWrapper.setBorder(new EmptyBorder(5, 0, 0, 0));
+		resultsWrapper.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		resultsWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(12, 0));
 		resultsWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(5, 5, 0, 0));
 
@@ -407,7 +409,7 @@ public class MarketWatcherPluginPanel extends PluginPanel
 		// Add each result to items list
 		for (ItemPrice item : results)
 		{
-			if (count++ > MAX_SEARCH_ITEMS)
+			if (count++ >= MAX_SEARCH_ITEMS)
 			{
 				break;
 			}
@@ -494,8 +496,8 @@ public class MarketWatcherPluginPanel extends PluginPanel
 
 	public void containsItemWarning()
 	{
-		JOptionPane.showConfirmDialog(this,
-			CONTAINS_ITEM_MESSAGE, CONTAINS_ITEM_TITLE, JOptionPane.DEFAULT_OPTION);
+		JOptionPane.showMessageDialog(this,
+			CONTAINS_ITEM_MESSAGE, CONTAINS_ITEM_TITLE, JOptionPane.WARNING_MESSAGE);
 	}
 
 	private JPanel createMarginWrapper(JPanel panel)
@@ -504,5 +506,49 @@ public class MarketWatcherPluginPanel extends PluginPanel
 		marginWrapper.setBorder(new EmptyBorder(5, 0, 0, 0));
 		marginWrapper.add(panel, BorderLayout.NORTH);
 		return marginWrapper;
+	}
+
+	/**
+	 * A JPanel that always tracks the width of the JScrollPane viewport it's placed in,
+	 * so it never grows wider than the panel and triggers a horizontal scrollbar.
+	 * Vertical size is left as the panel's own preferred height so vertical scrolling
+	 * still works normally.
+	 */
+	private static class NoHorizontalScrollPanel extends JPanel implements Scrollable
+	{
+		NoHorizontalScrollPanel(java.awt.LayoutManager layout)
+		{
+			super(layout);
+		}
+
+		@Override
+		public Dimension getPreferredScrollableViewportSize()
+		{
+			return getPreferredSize();
+		}
+
+		@Override
+		public int getScrollableUnitIncrement(java.awt.Rectangle visibleRect, int orientation, int direction)
+		{
+			return 16;
+		}
+
+		@Override
+		public int getScrollableBlockIncrement(java.awt.Rectangle visibleRect, int orientation, int direction)
+		{
+			return visibleRect.height;
+		}
+
+		@Override
+		public boolean getScrollableTracksViewportWidth()
+		{
+			return true;
+		}
+
+		@Override
+		public boolean getScrollableTracksViewportHeight()
+		{
+			return false;
+		}
 	}
 }

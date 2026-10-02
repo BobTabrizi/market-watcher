@@ -120,8 +120,6 @@ public class MarketWatcherTabPanel extends JPanel
 
 		if (collapsed)
 		{
-			tabName.setPreferredSize(new Dimension(120, 0));
-
 			collapseButton.setIcon(COLLAPSED_ICON);
 			collapseButton.addMouseListener(new MouseAdapter()
 			{
@@ -320,7 +318,7 @@ public class MarketWatcherTabPanel extends JPanel
 		int confirm = JOptionPane.showConfirmDialog(this,
 			DELETE_MESSAGE, DELETE_TITLE, JOptionPane.YES_NO_OPTION);
 
-		return confirm == JOptionPane.YES_NO_OPTION;
+		return confirm == JOptionPane.YES_OPTION;
 	}
 
 	private JPanel createMarginWrapper(JPanel panel)

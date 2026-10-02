@@ -29,6 +29,7 @@ import com.marketwatcher.MarketWatcherPlugin;
 
 import static com.marketwatcher.utilities.Constants.GP;
 import static com.marketwatcher.utilities.Constants.NOT_AVAILABLE;
+import static com.marketwatcher.utilities.Constants.TRUNCATION_STRING;
 
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.QuantityFormatter;
@@ -109,9 +110,13 @@ public class MarketWatcherTabResultPanel extends JPanel
 		// Item Name
 		JLabel itemName = new JLabel();
 		itemName.setForeground(Color.WHITE);
-		itemName.setMaximumSize(new Dimension(0, 0));
-		itemName.setPreferredSize(new Dimension(0, 0));
-		itemName.setText(item.getName());
+
+		String dispName = item.getName().substring(0, Math.min(item.getName().length(), 22));
+		if (dispName.length() == 22)
+		{
+			dispName = dispName.concat(TRUNCATION_STRING);
+		}
+		itemName.setText(dispName);
 		rightPanel.add(itemName);
 
 		// GE Price

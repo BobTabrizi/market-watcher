@@ -29,10 +29,13 @@ import com.marketwatcher.data.MarketWatcherItem;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.Cursor;
+import java.awt.image.BufferedImage;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.QuantityFormatter;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 import static com.marketwatcher.utilities.Constants.*;
@@ -41,9 +44,162 @@ import static com.marketwatcher.utilities.PriceUtils.manageItemPrices;
 
 public final class PanelUtils
 {
+	private static final ImageIcon SHIFT_UP_ICON;
+	private static final ImageIcon SHIFT_UP_HOVER_ICON;
+	private static final ImageIcon SHIFT_DOWN_ICON;
+	private static final ImageIcon SHIFT_DOWN_HOVER_ICON;
+
+	static
+	{
+		final BufferedImage shiftUpImage = ImageUtil.loadImageResource(PanelUtils.class, SHIFT_UP_ICON_PATH);
+		SHIFT_UP_ICON = new ImageIcon(shiftUpImage);
+		SHIFT_UP_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(shiftUpImage, 0.53f));
+
+		final BufferedImage shiftDownImage = ImageUtil.loadImageResource(PanelUtils.class, SHIFT_DOWN_ICON_PATH);
+		SHIFT_DOWN_ICON = new ImageIcon(shiftDownImage);
+		SHIFT_DOWN_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(shiftDownImage, 0.53f));
+	}
 
 	private PanelUtils()
 	{
+	}
+
+	/**
+	 * Builds the "delete + shift up/down" action column shown next to a tracked item row.
+	 * Shared by {@link com.marketwatcher.ui.MarketWatcherItemPanel} (top-level items) and
+	 * {@link com.marketwatcher.ui.MarketWatcherTabItemPanel} (items inside a tab), which
+	 * previously duplicated this wiring with only the delete icon/border, confirm text, and
+	 * target actions differing.
+	 *
+	 * @param dialogParent    component the delete confirmation dialog is anchored to
+	 * @param confirmTitle    title of the delete confirmation dialog
+	 * @param confirmMessage  message of the delete confirmation dialog
+	 * @param deleteIcon      icon shown for the delete action
+	 * @param deleteHoverIcon icon shown while hovering the delete action
+	 * @param deleteIconInsets border/insets around the delete icon
+	 * @param itemIndex       index of this item within its list
+	 * @param itemsSize       size of the list this item belongs to
+	 * @param onDelete        invoked if the user confirms deletion
+	 * @param onShiftUp       invoked when shifting up is requested (itemIndex &gt; 0)
+	 * @param onShiftDown     invoked when shifting down is requested (itemIndex &lt; itemsSize - 1)
+	 */
+	public static JPanel createItemActionPanel(Component dialogParent, String confirmTitle, String confirmMessage,
+		ImageIcon deleteIcon, ImageIcon deleteHoverIcon, Insets deleteIconInsets,
+		int itemIndex, int itemsSize, Runnable onDelete, Runnable onShiftUp, Runnable onShiftDown)
+	{
+		JPanel actionPanel = new JPanel(new BorderLayout());
+		actionPanel.setBackground(new Color(0, 0, 0, 0));
+		actionPanel.setOpaque(false);
+
+		// Delete Item
+		JLabel deleteItem = new JLabel(deleteIcon);
+		deleteItem.setBorder(new EmptyBorder(deleteIconInsets.top, deleteIconInsets.left, deleteIconInsets.bottom, deleteIconInsets.right));
+		deleteItem.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseReleased(MouseEvent e)
+			{
+				int confirm = JOptionPane.showConfirmDialog(dialogParent, confirmMessage, confirmTitle, JOptionPane.YES_NO_OPTION);
+				if (confirm == JOptionPane.YES_OPTION)
+				{
+					onDelete.run();
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				deleteItem.setIcon(deleteHoverIcon);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				deleteItem.setIcon(deleteIcon);
+			}
+		});
+		actionPanel.add(deleteItem, BorderLayout.NORTH);
+
+		// Shift Item Panel
+		JPanel shiftItemPanel = new JPanel(new BorderLayout());
+		shiftItemPanel.setOpaque(false);
+
+		// Shift item up
+		JLabel shiftUp = new JLabel(SHIFT_UP_ICON);
+		shiftUp.setBorder(new EmptyBorder(0, 0, 15, 5));
+
+		if (itemIndex == 0)
+		{
+			shiftUp.setIcon(SHIFT_UP_HOVER_ICON);
+		}
+
+		shiftUp.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseReleased(MouseEvent e)
+			{
+				if (itemIndex != 0)
+				{
+					onShiftUp.run();
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				shiftUp.setIcon(SHIFT_UP_HOVER_ICON);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				if (itemIndex != 0)
+				{
+					shiftUp.setIcon(SHIFT_UP_ICON);
+				}
+			}
+		});
+		shiftItemPanel.add(shiftUp, BorderLayout.NORTH);
+
+		// Shift item down
+		JLabel shiftDown = new JLabel(SHIFT_DOWN_ICON);
+		shiftDown.setBorder(new EmptyBorder(15, 0, 20, 5));
+
+		if (itemIndex == itemsSize - 1)
+		{
+			shiftDown.setIcon(SHIFT_DOWN_HOVER_ICON);
+		}
+
+		shiftDown.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseReleased(MouseEvent e)
+			{
+				if (itemIndex != itemsSize - 1)
+				{
+					onShiftDown.run();
+				}
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				shiftDown.setIcon(SHIFT_DOWN_HOVER_ICON);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				if (itemIndex != itemsSize - 1)
+				{
+					shiftDown.setIcon(SHIFT_DOWN_ICON);
+				}
+			}
+		});
+		shiftItemPanel.add(shiftDown, BorderLayout.EAST);
+		actionPanel.add(shiftItemPanel, BorderLayout.SOUTH);
+
+		return actionPanel;
 	}
 
 	public static JPanel createRightPanel(MarketWatcherItem item, MarketWatcherPlugin plugin, String viewType)
