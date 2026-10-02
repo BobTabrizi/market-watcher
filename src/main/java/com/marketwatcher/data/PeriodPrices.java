@@ -34,19 +34,19 @@ public class PeriodPrices
 {
 	public static final PeriodPrices EMPTY = new PeriodPrices(null, null, null);
 
-	Integer low;
-	Integer med;
-	Integer high;
+	Long low;
+	Long med;
+	Long high;
 
 	/**
 	 * Builds period prices from the wiki's 6h averages, where 0 means no trades in that window.
 	 */
-	public static PeriodPrices fromWikiAverages(int avgLowPrice, int avgHighPrice)
+	public static PeriodPrices fromWikiAverages(long avgLowPrice, long avgHighPrice)
 	{
-		Integer low = avgLowPrice > 0 ? avgLowPrice : null;
-		Integer high = avgHighPrice > 0 ? avgHighPrice : null;
-		// long avoids int overflow when both prices are near Integer.MAX_VALUE
-		Integer med = low != null && high != null ? (int) (((long) low + high) / 2) : null;
+		// Prices are longs because wiki averages can exceed Integer.MAX_VALUE
+		Long low = avgLowPrice > 0 ? avgLowPrice : null;
+		Long high = avgHighPrice > 0 ? avgHighPrice : null;
+		Long med = low != null && high != null ? (low + high) / 2 : null;
 		return new PeriodPrices(low, med, high);
 	}
 }

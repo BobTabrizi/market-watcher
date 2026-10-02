@@ -39,6 +39,7 @@ import javax.inject.Inject;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.marketwatcher.utilities.Constants.*;
 
@@ -181,7 +182,8 @@ public class MarketWatcherTabDataManager
 
 		for (MarketWatcherTabData tab : tabs)
 		{
-			List<MarketWatcherItem> tabItems = new ArrayList<>();
+			// Tab items are read by the panel on the Swing thread, see MarketWatcherPlugin#items
+			List<MarketWatcherItem> tabItems = new CopyOnWriteArrayList<>();
 			for (Integer itemId : tab.getItems())
 			{
 				tabItems.add(convertIdToItem(itemId));

@@ -45,40 +45,46 @@ public class PriceUtilsTest
 	@Test
 	public void formatsSmallPricesUnabbreviated()
 	{
-		assertEquals("5" + BLANK + BLANK + BLANK + NARROW + NARROW, PriceUtils.formatPrice(5, STANDARD));
-		assertEquals("5" + BLANK + BLANK + BLANK, PriceUtils.formatPrice(5, COMPACT));
-		assertEquals("42" + BLANK + BLANK + NARROW, PriceUtils.formatPrice(42, COMPACT));
-		assertEquals("999" + BLANK + NARROW + NARROW + NARROW, PriceUtils.formatPrice(999, STANDARD));
-		assertEquals("1000" + BLANK + NARROW, PriceUtils.formatPrice(1000, STANDARD));
-		assertEquals("9999" + NARROW + NARROW + NARROW, PriceUtils.formatPrice(9999, COMPACT));
+		assertEquals("5" + BLANK + BLANK + BLANK + NARROW + NARROW, PriceUtils.formatPrice(5L, STANDARD));
+		assertEquals("5" + BLANK + BLANK + BLANK, PriceUtils.formatPrice(5L, COMPACT));
+		assertEquals("42" + BLANK + BLANK + NARROW, PriceUtils.formatPrice(42L, COMPACT));
+		assertEquals("999" + BLANK + NARROW + NARROW + NARROW, PriceUtils.formatPrice(999L, STANDARD));
+		assertEquals("1000" + BLANK + NARROW, PriceUtils.formatPrice(1000L, STANDARD));
+		assertEquals("9999" + NARROW + NARROW + NARROW, PriceUtils.formatPrice(9999L, COMPACT));
 	}
 
 	@Test
 	public void abbreviatesThousands()
 	{
-		assertEquals("12.3K" + BLANK, PriceUtils.formatPrice(12345, STANDARD));
-		assertEquals("12.3K" + NARROW + NARROW, PriceUtils.formatPrice(12345, COMPACT));
-		assertEquals("100.0K" + NARROW, PriceUtils.formatPrice(100000, STANDARD));
-		assertEquals("100.0K", PriceUtils.formatPrice(100000, COMPACT));
+		assertEquals("12.3K" + BLANK, PriceUtils.formatPrice(12345L, STANDARD));
+		assertEquals("12.3K" + NARROW + NARROW, PriceUtils.formatPrice(12345L, COMPACT));
+		assertEquals("100.0K" + NARROW, PriceUtils.formatPrice(100000L, STANDARD));
+		assertEquals("100.0K", PriceUtils.formatPrice(100000L, COMPACT));
 	}
 
 	@Test
 	public void abbreviatesMillionsAndBillions()
 	{
-		assertEquals("1.0M" + BLANK + NARROW + NARROW, PriceUtils.formatPrice(1000000, STANDARD));
-		assertEquals("1.0M" + BLANK, PriceUtils.formatPrice(1000000, COMPACT));
-		assertEquals("123.5M" + NARROW, PriceUtils.formatPrice(123456789, STANDARD));
-		assertEquals("1.50B" + BLANK + NARROW, PriceUtils.formatPrice(1500000000, STANDARD));
-		assertEquals("2.15B" + NARROW + NARROW, PriceUtils.formatPrice(Integer.MAX_VALUE, COMPACT));
+		assertEquals("1.0M" + BLANK + NARROW + NARROW, PriceUtils.formatPrice(1000000L, STANDARD));
+		assertEquals("1.0M" + BLANK, PriceUtils.formatPrice(1000000L, COMPACT));
+		assertEquals("123.5M" + NARROW, PriceUtils.formatPrice(123456789L, STANDARD));
+		assertEquals("1.50B" + BLANK + NARROW, PriceUtils.formatPrice(1500000000L, STANDARD));
+		assertEquals("2.15B" + NARROW + NARROW, PriceUtils.formatPrice((long) Integer.MAX_VALUE, COMPACT));
 	}
 
 	@Test
 	public void roundsUpIntoNextUnit()
 	{
 		// Previously shown as 1000.0K and 1000.0M
-		assertEquals("1.0M", PriceUtils.abbreviatePrice(999999));
-		assertEquals("1.0M", PriceUtils.abbreviatePrice(999950));
-		assertEquals("999.9K", PriceUtils.abbreviatePrice(999949));
-		assertEquals("1.00B", PriceUtils.abbreviatePrice(999999999));
+		assertEquals("1.0M", PriceUtils.abbreviatePrice(999999L));
+		assertEquals("1.0M", PriceUtils.abbreviatePrice(999950L));
+		assertEquals("999.9K", PriceUtils.abbreviatePrice(999949L));
+		assertEquals("1.00B", PriceUtils.abbreviatePrice(999999999L));
+	}
+
+	@Test
+	public void formatsPricesAboveIntRange()
+	{
+		assertEquals("2.29B", PriceUtils.abbreviatePrice(2290000000L));
 	}
 }

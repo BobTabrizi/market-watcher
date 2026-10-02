@@ -30,8 +30,8 @@ import lombok.Data;
 @Data
 public class WikiItemDetails
 {
-	int avgHighPrice;
+	long avgHighPrice;
 	long highPriceVolume;
-	int avgLowPrice;
+	long avgLowPrice;
 	long lowPriceVolume;
 }

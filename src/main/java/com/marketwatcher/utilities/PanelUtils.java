@@ -332,7 +332,7 @@ public final class PanelUtils
 		return gbc;
 	}
 
-	private static JLabel createPriceLabel(String priceType, Integer price, Color color, String viewType)
+	private static JLabel createPriceLabel(String priceType, Long price, Color color, String viewType)
 	{
 		JLabel label = new JLabel();
 		label.setForeground(color);
@@ -341,7 +341,7 @@ public final class PanelUtils
 		return label;
 	}
 
-	public static String formatTooltip(Integer price)
+	public static String formatTooltip(Long price)
 	{
 		return price == null ? NOT_AVAILABLE : QuantityFormatter.formatNumber(price);
 	}

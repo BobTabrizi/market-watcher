@@ -34,9 +34,9 @@ public class PeriodPricesTest
 	public void computesMedianOfLowAndHigh()
 	{
 		PeriodPrices prices = PeriodPrices.fromWikiAverages(100, 201);
-		assertEquals(Integer.valueOf(100), prices.getLow());
-		assertEquals(Integer.valueOf(150), prices.getMed());
-		assertEquals(Integer.valueOf(201), prices.getHigh());
+		assertEquals(Long.valueOf(100), prices.getLow());
+		assertEquals(Long.valueOf(150), prices.getMed());
+		assertEquals(Long.valueOf(201), prices.getHigh());
 	}
 
 	@Test
@@ -45,13 +45,14 @@ public class PeriodPricesTest
 		PeriodPrices prices = PeriodPrices.fromWikiAverages(0, 500);
 		assertNull(prices.getLow());
 		assertNull(prices.getMed());
-		assertEquals(Integer.valueOf(500), prices.getHigh());
+		assertEquals(Long.valueOf(500), prices.getHigh());
 	}
 
 	@Test
-	public void medianDoesNotOverflow()
+	public void handlesPricesAboveIntRange()
 	{
-		PeriodPrices prices = PeriodPrices.fromWikiAverages(Integer.MAX_VALUE, Integer.MAX_VALUE);
-		assertEquals(Integer.valueOf(Integer.MAX_VALUE), prices.getMed());
+		// The wiki has returned averages above Integer.MAX_VALUE, which used to fail the whole response
+		PeriodPrices prices = PeriodPrices.fromWikiAverages(2200000000L, 2290000000L);
+		assertEquals(Long.valueOf(2245000000L), prices.getMed());
 	}
 }

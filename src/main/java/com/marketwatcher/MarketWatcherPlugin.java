@@ -73,7 +73,6 @@ import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
 
 import lombok.Getter;
-import lombok.Setter;
 import net.runelite.client.util.LinkBrowser;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -98,13 +97,13 @@ public class MarketWatcherPlugin extends Plugin
 	@Inject
 	private ClientToolbar clientToolbar;
 
+	// Changed on the client thread but read by the panel on the Swing thread, so copy-on-write
+	// lists give the panel a consistent snapshot. Both lists are small and rarely change.
 	@Getter
-	@Setter
-	private List<MarketWatcherItem> items = new ArrayList<>();
+	private volatile List<MarketWatcherItem> items = new CopyOnWriteArrayList<>();
 
 	@Getter
-	@Setter
-	private List<MarketWatcherTab> tabs = new ArrayList<>();
+	private volatile List<MarketWatcherTab> tabs = new CopyOnWriteArrayList<>();
 
 	public static final int PERIOD_COUNT = 3;
 
@@ -166,6 +165,16 @@ public class MarketWatcherPlugin extends Plugin
 				log.warn("Failed to fetch period {} prices ({} {})", period + 1, periodQuantities[period], periodTypes[period], e);
 			}
 		}
+	}
+
+	public void setItems(List<MarketWatcherItem> items)
+	{
+		this.items = new CopyOnWriteArrayList<>(items);
+	}
+
+	public void setTabs(List<MarketWatcherTab> tabs)
+	{
+		this.tabs = new CopyOnWriteArrayList<>(tabs);
 	}
 
 	public int getPeriodQuantity(int period)
@@ -254,7 +263,6 @@ public class MarketWatcherPlugin extends Plugin
 			{
 				items.add(item);
 				dataManager.saveData();
-				processPendingConfigChanges();
 				SwingUtilities.invokeLater(() ->
 				{
 					panel.switchToMarketWatch();
@@ -273,7 +281,6 @@ public class MarketWatcherPlugin extends Plugin
 		clientThread.invokeLater(() -> {
 			items.remove(item);
 			dataManager.saveData();
-			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -290,7 +297,6 @@ public class MarketWatcherPlugin extends Plugin
 				}
 			}
 			dataManager.saveData();
-			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -301,7 +307,6 @@ public class MarketWatcherPlugin extends Plugin
 			tab.getItems().remove(item);
 			items.add(item);
 			dataManager.saveData();
-			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -311,7 +316,6 @@ public class MarketWatcherPlugin extends Plugin
 		clientThread.invokeLater(() -> {
 			tab.setCollapsed(!tab.isCollapsed());
 			dataManager.saveData();
-			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -332,13 +336,12 @@ public class MarketWatcherPlugin extends Plugin
 
 		String tabName = name;
 		clientThread.invokeLater(() -> {
-			MarketWatcherTab tab = new MarketWatcherTab(tabName, new ArrayList<>());
+			MarketWatcherTab tab = new MarketWatcherTab(tabName, new CopyOnWriteArrayList<>());
 
 			if (!tabs.contains(tab))
 			{
 				tabs.add(tab);
 				dataManager.saveData();
-				processPendingConfigChanges();
 				SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 			}
 			else
@@ -355,8 +358,6 @@ public class MarketWatcherPlugin extends Plugin
 
 	public void showHelp()
 	{
-		processPendingConfigChanges();
-		SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		JOptionPane.showMessageDialog(panel, "Each item shows the average wiki prices from a 6-hour window at three points in the past.\nThe periods (e.g. 1 day ago, 1 week ago) can be configured in plugin settings.\nFor each period, the low, medium, and high prices are color coded in rows.\nLows are the left number. Mediums are the center number. Highs are the right number.", "Information", JOptionPane.INFORMATION_MESSAGE);
 	}
 
@@ -378,7 +379,6 @@ public class MarketWatcherPlugin extends Plugin
 			}
 
 			dataManager.saveData();
-			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -402,7 +402,6 @@ public class MarketWatcherPlugin extends Plugin
 			}
 
 			dataManager.saveData();
-			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -414,7 +413,6 @@ public class MarketWatcherPlugin extends Plugin
 			items.addAll(tab.getItems());
 			tabs.remove(tab);
 			dataManager.saveData();
-			processPendingConfigChanges();
 			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 		});
 	}
@@ -464,7 +462,6 @@ public class MarketWatcherPlugin extends Plugin
 			{
 				tab.setName(tabName);
 				dataManager.saveData();
-				processPendingConfigChanges();
 				SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 			}
 			else if (nameCheck != tab)

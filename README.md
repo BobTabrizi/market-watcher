@@ -6,12 +6,14 @@ Watches market prices of items using OSRS Wiki Prices: https://prices.runescape.
 
 Search for items to track and optionally add items to tabs to group them together.
 
-Each item displays prices for three time periods up to the current date:
+Each item displays its current Grand Exchange price, plus the wiki's average low, medium, and high prices from three points in the past. Each of these is the average over a 6-hour window, not a range across the whole period.
 
 Default Time Periods:
-- 1 Week
-- 1 Month
-- 3 Months
+- 1 Day ago
+- 3 Weeks ago
+- 3 Months ago
+
+Hover over a price to see its exact value. Click an item's icon to open its page on the OSRS Wiki prices site.
 
 ### Configuration
 - Increase or decrease the interval at which the item price data is automatically refreshed

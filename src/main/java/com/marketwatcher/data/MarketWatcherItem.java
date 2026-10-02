@@ -25,23 +25,21 @@
 package com.marketwatcher.data;
 
 import java.util.List;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
 import net.runelite.client.util.AsyncBufferedImage;
 
-@AllArgsConstructor
 public class MarketWatcherItem implements Comparable<MarketWatcherItem>
 {
 	@Getter
-	private AsyncBufferedImage image;
+	private final AsyncBufferedImage image;
 
 	@Getter
-	private String name;
+	private final String name;
 
 	@Getter
-	private int itemId;
+	private final int itemId;
 
 	@Getter
 	@Setter
@@ -49,7 +47,16 @@ public class MarketWatcherItem implements Comparable<MarketWatcherItem>
 
 	// One entry per configured price period, in period order
 	@Getter
-	private List<PeriodPrices> periodPrices;
+	private final List<PeriodPrices> periodPrices;
+
+	public MarketWatcherItem(AsyncBufferedImage image, String name, int itemId, long gePrice, List<PeriodPrices> periodPrices)
+	{
+		this.image = image;
+		this.name = name;
+		this.itemId = itemId;
+		this.gePrice = gePrice;
+		this.periodPrices = periodPrices;
+	}
 
 	@Override
 	public boolean equals(Object obj)

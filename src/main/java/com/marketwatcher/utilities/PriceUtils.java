@@ -151,7 +151,7 @@ public final class PriceUtils
 	 * @param price    the price, or null if unavailable
 	 * @param viewType {@link Constants#STANDARD} or {@link Constants#COMPACT}
 	 */
-	public static String formatPrice(Integer price, String viewType)
+	public static String formatPrice(Long price, String viewType)
 	{
 		String formatted = price == null ? NOT_AVAILABLE : abbreviatePrice(price);
 
@@ -166,7 +166,7 @@ public final class PriceUtils
 		return formatted;
 	}
 
-	static String abbreviatePrice(int price)
+	static String abbreviatePrice(long price)
 	{
 		final DecimalFormat df = new DecimalFormat("0.0");
 		final DecimalFormat df2 = new DecimalFormat("0.00");
@@ -191,6 +191,6 @@ public final class PriceUtils
 			}
 			return df.format((float) price / 1000000) + M_MILLION;
 		}
-		return Integer.toString(price);
+		return Long.toString(price);
 	}
 }
