@@ -24,48 +24,34 @@
  */
 package com.marketwatcher.data;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import org.junit.Test;
 
-import java.util.List;
-
-@AllArgsConstructor
-public class MarketWatcherTab
+public class PeriodPricesTest
 {
-	@Getter
-	@Setter
-	private String name;
-
-	@Getter
-	@Setter
-	private boolean collapsed;
-
-	@Getter
-	private final List<MarketWatcherItem> items;
-
-	public MarketWatcherTab(String name, List<MarketWatcherItem> items)
+	@Test
+	public void computesMedianOfLowAndHigh()
 	{
-		this.name = name;
-		collapsed = false;
-		this.items = items;
+		PeriodPrices prices = PeriodPrices.fromWikiAverages(100, 201);
+		assertEquals(Integer.valueOf(100), prices.getLow());
+		assertEquals(Integer.valueOf(150), prices.getMed());
+		assertEquals(Integer.valueOf(201), prices.getHigh());
 	}
 
-	@Override
-	public boolean equals(Object obj)
+	@Test
+	public void treatsZeroAsUnavailable()
 	{
-		if (!(obj instanceof MarketWatcherTab))
-		{
-			return false;
-		}
-
-		final MarketWatcherTab tab = (MarketWatcherTab) obj;
-		return tab.getName().equals(this.name);
+		PeriodPrices prices = PeriodPrices.fromWikiAverages(0, 500);
+		assertNull(prices.getLow());
+		assertNull(prices.getMed());
+		assertEquals(Integer.valueOf(500), prices.getHigh());
 	}
 
-	@Override
-	public int hashCode()
+	@Test
+	public void medianDoesNotOverflow()
 	{
-		return name.hashCode();
+		PeriodPrices prices = PeriodPrices.fromWikiAverages(Integer.MAX_VALUE, Integer.MAX_VALUE);
+		assertEquals(Integer.valueOf(Integer.MAX_VALUE), prices.getMed());
 	}
 }

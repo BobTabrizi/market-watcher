@@ -48,7 +48,7 @@ import java.awt.GridBagLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 public class MarketWatcherTabPanel extends JPanel
@@ -248,12 +248,13 @@ public class MarketWatcherTabPanel extends JPanel
 				@Override
 				public void mouseReleased(MouseEvent e)
 				{
-					final String[] itemNames = plugin.getItems().stream().map(MarketWatcherItem::getName).toArray(String[]::new);
-					Arrays.sort(itemNames, String.CASE_INSENSITIVE_ORDER);
+					final MarketWatcherItem[] options = plugin.getItems().stream()
+						.sorted(Comparator.comparing(MarketWatcherItem::getName, String.CASE_INSENSITIVE_ORDER))
+						.toArray(MarketWatcherItem[]::new);
 
-					MarketWatcherSelectionPanel selection = new MarketWatcherSelectionPanel(panel, itemNames);
+					MarketWatcherSelectionPanel selection = new MarketWatcherSelectionPanel(panel, options);
 					selection.setOnOk(e1 -> {
-						List<String> selectedItems = selection.getSelectedItems();
+						List<MarketWatcherItem> selectedItems = selection.getSelectedItems();
 						if (!selectedItems.isEmpty())
 						{
 							plugin.addItemsToTab(tab, selectedItems);

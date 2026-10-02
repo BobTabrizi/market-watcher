@@ -26,6 +26,8 @@ package com.marketwatcher.utilities;
 
 import com.marketwatcher.MarketWatcherPlugin;
 import com.marketwatcher.data.MarketWatcherItem;
+import com.marketwatcher.data.PeriodPrices;
+import java.util.List;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.Cursor;
@@ -40,10 +42,11 @@ import java.awt.*;
 
 import static com.marketwatcher.utilities.Constants.*;
 import static com.marketwatcher.utilities.Constants.STANDARD;
-import static com.marketwatcher.utilities.PriceUtils.manageItemPrices;
+import static com.marketwatcher.utilities.PriceUtils.formatPrice;
 
 public final class PanelUtils
 {
+	private static final int MAX_NAME_LENGTH = 22;
 	private static final ImageIcon SHIFT_UP_ICON;
 	private static final ImageIcon SHIFT_UP_HOVER_ICON;
 	private static final ImageIcon SHIFT_DOWN_ICON;
@@ -210,20 +213,6 @@ public final class PanelUtils
 		itemImage.setPreferredSize(new Dimension(32, 32));
 		itemImage.setMaximumSize(new Dimension(32, 32));
 
-		String periodOneLow = item.getPeriodOneLow();
-		String periodOneMed = item.getPeriodOneMed();
-		String periodOneHigh = item.getPeriodOneHigh();
-		String periodTwoLow = item.getPeriodTwoLow();
-		String periodTwoMed = item.getPeriodTwoMed();
-		String periodTwoHigh = item.getPeriodTwoHigh();
-		String periodThreeLow = item.getPeriodThreeLow();
-		String periodThreeMed = item.getPeriodThreeMed();
-		String periodThreeHigh = item.getPeriodThreeHigh();
-
-		String[] periodOnePrices = manageItemPrices(periodOneLow, periodOneMed, periodOneHigh, viewType);
-		String[] periodTwoPrices = manageItemPrices(periodTwoLow, periodTwoMed, periodTwoHigh, viewType);
-		String[] periodThreePrices = manageItemPrices(periodThreeLow, periodThreeMed, periodThreeHigh, viewType);
-
 		if (item.getImage() != null)
 		{
 			item.getImage().addTo(itemImage);
@@ -261,10 +250,10 @@ public final class PanelUtils
 		JLabel itemName = new JLabel();
 		itemName.setForeground(Color.WHITE);
 
-		String dispLabel = item.getName().substring(0, Math.min(item.getName().length(), 22));
-		if (dispLabel.length() == 22)
+		String dispLabel = item.getName();
+		if (dispLabel.length() > MAX_NAME_LENGTH)
 		{
-			dispLabel = dispLabel.concat(TRUNCATION_STRING);
+			dispLabel = dispLabel.substring(0, MAX_NAME_LENGTH - TRUNCATION_STRING.length()) + TRUNCATION_STRING;
 		}
 		itemName.setText(dispLabel);
 		itemName.setToolTipText(item.getName());
@@ -286,112 +275,40 @@ public final class PanelUtils
 		gePriceLabel.setForeground(ColorScheme.GRAND_EXCHANGE_PRICE);
 		rightPanel.add(gePriceLabel, getGbc(gbc, 1, 1, 5, 1, 0, 0, new Insets(0, 0, 0, 0)));
 
-		Integer topBottomInset = viewType.equals(STANDARD) ? 1 : 3;
+		int topBottomInset = viewType.equals(STANDARD) ? 1 : 3;
 		Insets medPriceInsets = viewType.equals(STANDARD) ? new Insets(1, 3, 1, 3) : new Insets(3, 3, 3, 3);
 		Insets lowHighPriceInsets = viewType.equals(STANDARD) ? new Insets(1, 0, 1, 0) : new Insets(3, 0, 3, 3);
-
-		JLabel timeType = new JLabel();
-
-		timeType.setForeground(Color.WHITE);
-
-		int periodOneQty = plugin.configPricePeriodOneQty;
-		String periodOneType = plugin.configPeriodOneType.name();
-
-		timeType.setText(Integer.toString(periodOneQty) + periodOneType.charAt(0) + ":");
-		timeType.setToolTipText(Integer.toString(periodOneQty) + " " + periodOneType);
-		rightPanel.add(timeType, getGbc(gbc, 0, 2, 1, 1, 0, 0, new Insets(5, 0, topBottomInset, 0)));
-
-		JLabel lowPeriodOnePrice = new JLabel();
 
 		boolean isColorBlindMode = plugin.getConfig().colorBlindMode();
 		Color lowColor = isColorBlindMode ? new Color(136, 204, 238) : Color.GREEN;
 		Color medColor = isColorBlindMode ? new Color(221, 204, 119) : Color.YELLOW;
 		Color highColor = isColorBlindMode ? new Color(170, 68, 153) : Color.RED;
 
-		lowPeriodOnePrice.setForeground(lowColor);
-		lowPeriodOnePrice.setText(periodOnePrices[0]);
-		lowPeriodOnePrice.setToolTipText(LOW + ": " + formatTooltip(periodOneLow));
-		rightPanel.add(lowPeriodOnePrice, getGbc(gbc, 1, 2, 1, 1, 0, 0, new Insets(5, 0, topBottomInset, 0)));
+		List<PeriodPrices> periodPrices = item.getPeriodPrices();
+		for (int period = 0; period < periodPrices.size(); period++)
+		{
+			PeriodPrices prices = periodPrices.get(period);
+			int row = period + 2;
 
-		JLabel medPeriodOnePrice = new JLabel();
+			// The first row has extra space above it to separate it from the GE price
+			Insets labelInsets = period == 0 ? new Insets(5, 0, topBottomInset, 0) : new Insets(topBottomInset, 0, topBottomInset, 0);
+			Insets lowHighInsets = period == 0 ? new Insets(5, 0, topBottomInset, 0) : lowHighPriceInsets;
+			Insets medInsets = period == 0 ? new Insets(5, 3, topBottomInset, 3) : medPriceInsets;
 
-		medPeriodOnePrice.setForeground(medColor);
-		medPeriodOnePrice.setText(periodOnePrices[1]);
-		medPeriodOnePrice.setToolTipText(MED + ": " + formatTooltip(periodOneMed));
-		rightPanel.add(medPeriodOnePrice, getGbc(gbc, 2, 2, 1, 1, 0, 0, new Insets(5, 3, topBottomInset, 3)));
-		JLabel highPeriodOnePrice = new JLabel();
+			JLabel timeType = new JLabel();
+			timeType.setForeground(Color.WHITE);
 
-		highPeriodOnePrice.setForeground(highColor);
-		highPeriodOnePrice.setText(periodOnePrices[2]);
-		highPeriodOnePrice.setToolTipText(HIGH + ": " + formatTooltip(periodOneHigh));
-		rightPanel.add(highPeriodOnePrice, getGbc(gbc, 3, 2, 1, 1, 0, 0, new Insets(5, 0, topBottomInset, 0)));
+			int periodQty = plugin.getPeriodQuantity(period);
+			String periodType = plugin.getPeriodType(period).name();
 
-		JLabel timeType2 = new JLabel();
+			timeType.setText(Integer.toString(periodQty) + periodType.charAt(0) + ":");
+			timeType.setToolTipText(Integer.toString(periodQty) + " " + periodType);
+			rightPanel.add(timeType, getGbc(gbc, 0, row, 1, 1, 0, 0, labelInsets));
 
-		timeType2.setForeground(Color.WHITE);
-
-
-		int periodTwoQty = plugin.configPricePeriodTwoQty;
-		String periodTwoType = plugin.configPeriodTwoType.name();
-
-		timeType2.setText(Integer.toString(periodTwoQty) + periodTwoType.charAt(0) + ":");
-		timeType2.setToolTipText(Integer.toString(periodTwoQty) + " " + periodTwoType);
-
-		rightPanel.add(timeType2, getGbc(gbc, 0, 3, 1, 1, 0, 0, new Insets(topBottomInset, 0, topBottomInset, 0)));
-
-		JLabel lowPeriodTwoPrice = new JLabel();
-
-		lowPeriodTwoPrice.setForeground(lowColor);
-		lowPeriodTwoPrice.setText(periodTwoPrices[0]);
-		lowPeriodTwoPrice.setToolTipText(LOW + ": " + formatTooltip(periodTwoLow));
-		rightPanel.add(lowPeriodTwoPrice, getGbc(gbc, 1, 3, 1, 1, 0, 0, lowHighPriceInsets));
-
-		JLabel medPeriodTwoPrice = new JLabel();
-
-		medPeriodTwoPrice.setForeground(medColor);
-		medPeriodTwoPrice.setText(periodTwoPrices[1]);
-		medPeriodTwoPrice.setToolTipText(MED + ": " + formatTooltip(periodTwoMed));
-		rightPanel.add(medPeriodTwoPrice, getGbc(gbc, 2, 3, 1, 1, 0, 0, medPriceInsets));
-
-		JLabel highPeriodTwoPrice = new JLabel();
-
-		highPeriodTwoPrice.setForeground(highColor);
-		highPeriodTwoPrice.setText(periodTwoPrices[2]);
-		highPeriodTwoPrice.setToolTipText(HIGH + ": " + formatTooltip(periodTwoHigh));
-		rightPanel.add(highPeriodTwoPrice, getGbc(gbc, 3, 3, 1, 1, 0, 0, lowHighPriceInsets));
-
-		JLabel timeType3 = new JLabel();
-
-		timeType3.setForeground(Color.WHITE);
-
-		int periodThreeQty = plugin.configPricePeriodThreeQty;
-		String periodThreeType = plugin.configPeriodThreeType.name();
-
-		timeType3.setText(Integer.toString(periodThreeQty) + periodThreeType.charAt(0) + ":");
-		timeType3.setToolTipText(Integer.toString(periodThreeQty) + " " + periodThreeType);
-
-		rightPanel.add(timeType3, getGbc(gbc, 0, 4, 1, 1, 0, 0, new Insets(topBottomInset, 0, topBottomInset, 0)));
-
-		JLabel lowPeriodThreePrice = new JLabel();
-
-		lowPeriodThreePrice.setForeground(lowColor);
-		lowPeriodThreePrice.setText(periodThreePrices[0]);
-		lowPeriodThreePrice.setToolTipText(LOW + ": " + formatTooltip(periodThreeLow));
-		rightPanel.add(lowPeriodThreePrice, getGbc(gbc, 1, 4, 1, 1, 0, 0, lowHighPriceInsets));
-
-		JLabel medPeriodThreePrice = new JLabel();
-
-		medPeriodThreePrice.setForeground(medColor);
-		medPeriodThreePrice.setText(periodThreePrices[1]);
-		medPeriodThreePrice.setToolTipText(MED + ": " + formatTooltip(periodThreeMed));
-		rightPanel.add(medPeriodThreePrice, getGbc(gbc, 2, 4, 1, 1, 0, 0, medPriceInsets));
-
-		JLabel highPeriodThreePrice = new JLabel();
-
-		highPeriodThreePrice.setForeground(highColor);
-		highPeriodThreePrice.setText(periodThreePrices[2]);
-		highPeriodThreePrice.setToolTipText(HIGH + ": " + formatTooltip(periodThreeHigh));
-		rightPanel.add(highPeriodThreePrice, getGbc(gbc, 3, 4, 1, 1, 0, 0, lowHighPriceInsets));
+			rightPanel.add(createPriceLabel(LOW, prices.getLow(), lowColor, viewType), getGbc(gbc, 1, row, 1, 1, 0, 0, lowHighInsets));
+			rightPanel.add(createPriceLabel(MED, prices.getMed(), medColor, viewType), getGbc(gbc, 2, row, 1, 1, 0, 0, medInsets));
+			rightPanel.add(createPriceLabel(HIGH, prices.getHigh(), highColor, viewType), getGbc(gbc, 3, row, 1, 1, 0, 0, lowHighInsets));
+		}
 
 		return rightPanel;
 	}
@@ -415,16 +332,17 @@ public final class PanelUtils
 		return gbc;
 	}
 
-	public static String formatTooltip(String tooltip)
+	private static JLabel createPriceLabel(String priceType, Integer price, Color color, String viewType)
 	{
+		JLabel label = new JLabel();
+		label.setForeground(color);
+		label.setText(formatPrice(price, viewType));
+		label.setToolTipText(priceType + ": " + formatTooltip(price));
+		return label;
+	}
 
-		if (tooltip.equals(NOT_AVAILABLE) || tooltip.equals(NULL))
-		{
-			return NOT_AVAILABLE;
-		}
-		else
-		{
-			return QuantityFormatter.formatNumber(Integer.parseInt(tooltip));
-		}
+	public static String formatTooltip(Integer price)
+	{
+		return price == null ? NOT_AVAILABLE : QuantityFormatter.formatNumber(price);
 	}
 }

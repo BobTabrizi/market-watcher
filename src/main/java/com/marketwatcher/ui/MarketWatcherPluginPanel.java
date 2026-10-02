@@ -30,7 +30,6 @@ import com.marketwatcher.data.MarketWatcherItem;
 import com.marketwatcher.data.MarketWatcherTab;
 
 import static com.marketwatcher.utilities.Constants.*;
-import static com.marketwatcher.utilities.PriceUtils.createMarketWatchItemWithPriceMap;
 
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.RuneLiteConfig;
@@ -62,7 +61,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class MarketWatcherPluginPanel extends PluginPanel
 {
@@ -418,9 +416,7 @@ public class MarketWatcherPluginPanel extends PluginPanel
 			AsyncBufferedImage itemImage = itemManager.getImage(itemId);
 			long itemPrice = useActivelyTradedPrice ? itemManager.getWikiPrice(item) : item.getPrice();
 
-			Map<String, String> itemPriceMap = plugin.getItemPriceMap().get(itemId);
-
-			MarketWatcherItem resultItem = createMarketWatchItemWithPriceMap(itemImage, item.getName(), itemId, itemPrice, itemPriceMap);
+			MarketWatcherItem resultItem = new MarketWatcherItem(itemImage, item.getName(), itemId, itemPrice, plugin.getPeriodPrices(itemId));
 
 			searchItems.add(resultItem);
 		}

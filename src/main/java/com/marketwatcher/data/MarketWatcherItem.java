@@ -24,11 +24,10 @@
  */
 package com.marketwatcher.data;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-
-import static com.marketwatcher.utilities.Constants.NOT_AVAILABLE;
 
 import net.runelite.client.util.AsyncBufferedImage;
 
@@ -48,51 +47,9 @@ public class MarketWatcherItem implements Comparable<MarketWatcherItem>
 	@Setter
 	private long gePrice;
 
+	// One entry per configured price period, in period order
 	@Getter
-	@Setter
-	private String periodOneLow;
-	@Getter
-	@Setter
-	private String periodOneMed;
-	@Getter
-	@Setter
-	private String periodOneHigh;
-	@Getter
-	@Setter
-	private String periodTwoLow;
-	@Getter
-	@Setter
-	private String periodTwoMed;
-	@Getter
-	@Setter
-	private String periodTwoHigh;
-	@Getter
-	@Setter
-	private String periodThreeLow;
-	@Getter
-	@Setter
-	private String periodThreeMed;
-	@Getter
-	@Setter
-	private String periodThreeHigh;
-
-
-	public MarketWatcherItem(AsyncBufferedImage itemImage, String itemName, int itemID, long itemPrice)
-	{
-		image = itemImage;
-		name = itemName;
-		itemId = itemID;
-		gePrice = itemPrice;
-		periodOneLow = NOT_AVAILABLE;
-		periodOneMed = NOT_AVAILABLE;
-		periodOneHigh = NOT_AVAILABLE;
-		periodTwoLow = NOT_AVAILABLE;
-		periodTwoMed = NOT_AVAILABLE;
-		periodTwoHigh = NOT_AVAILABLE;
-		periodThreeLow = NOT_AVAILABLE;
-		periodThreeMed = NOT_AVAILABLE;
-		periodThreeHigh = NOT_AVAILABLE;
-	}
+	private List<PeriodPrices> periodPrices;
 
 	@Override
 	public boolean equals(Object obj)
@@ -104,6 +61,12 @@ public class MarketWatcherItem implements Comparable<MarketWatcherItem>
 
 		final MarketWatcherItem item = (MarketWatcherItem) obj;
 		return item.getItemId() == this.itemId;
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return Integer.hashCode(itemId);
 	}
 
 	@Override

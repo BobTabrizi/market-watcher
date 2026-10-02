@@ -47,6 +47,8 @@ import javax.swing.*;
 import com.marketwatcher.data.MarketWatcherItem;
 import com.marketwatcher.data.MarketWatcherTab;
 import com.marketwatcher.data.MarketWatcherTabDataManager;
+import com.marketwatcher.data.PeriodPrices;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.marketwatcher.utilities.Constants.*;
 
@@ -57,13 +59,11 @@ import net.runelite.client.game.ItemManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.image.BufferedImage;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.List;
 import java.time.Instant;
 
 import com.google.gson.Gson;
-import net.runelite.api.Client;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.Plugin;
@@ -87,13 +87,9 @@ public class MarketWatcherPlugin extends Plugin
 {
 	public static final String CONFIG_GROUP = "marketwatcher";
 	@Inject
-	private Client client;
-	@Inject
 	private ClientThread clientThread;
 	@Inject
 	private ItemManager itemManager;
-	@Inject
-	private ConfigManager configManager;
 	@Inject
 	private Gson gson;
 	@Inject
@@ -110,12 +106,19 @@ public class MarketWatcherPlugin extends Plugin
 	@Setter
 	private List<MarketWatcherTab> tabs = new ArrayList<>();
 
-	@Getter
-	@Setter
-	Map<Integer, Map<String, String>> itemPriceMap = new ConcurrentHashMap<>();
+	public static final int PERIOD_COUNT = 3;
 
+	// One map of item ID to prices per period. Each map is replaced whole after a fetch,
+	// so readers on other threads always see a complete snapshot.
+	private final List<Map<Integer, PeriodPrices>> periodPriceMaps = new CopyOnWriteArrayList<>(
+		Collections.nCopies(PERIOD_COUNT, Collections.<Integer, PeriodPrices>emptyMap()));
+
+	@Inject
 	private OkHttpClient okHttpClient;
-	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+
+	// Own executor so blocking wiki requests don't tie up RuneLite's shared executor.
+	// Created in startUp and shut down in shutDown since the plugin instance is reused across restarts.
+	private ScheduledExecutorService scheduler;
 
 	private MarketWatcherPluginPanel panel;
 	@Inject
@@ -129,13 +132,8 @@ public class MarketWatcherPlugin extends Plugin
 	private static final String ADD_NEW_TAB_TITLE = "Add New Tab";
 	private static final String EDIT_TAB_TITLE = "Edit Tab";
 
-	public int configPricePeriodOneQty;
-	public int configPricePeriodTwoQty;
-	public int configPricePeriodThreeQty;
-
-	public PricePeriodType configPeriodOneType;
-	public PricePeriodType configPeriodTwoType;
-	public PricePeriodType configPeriodThreeType;
+	private final int[] periodQuantities = new int[PERIOD_COUNT];
+	private final PricePeriodType[] periodTypes = new PricePeriodType[PERIOD_COUNT];
 	private final Runnable dataRefresh = this::refreshItemData;
 	private ScheduledFuture<?> refreshHandler;
 	private ScheduledFuture<?> pendingConfigFuture;
@@ -157,21 +155,40 @@ public class MarketWatcherPlugin extends Plugin
 	// Each period is fetched independently so one failed request doesn't skip the others.
 	protected void fetchItemData()
 	{
-		fetchPeriodSafely(configPeriodOneType, configPricePeriodOneQty, "period1");
-		fetchPeriodSafely(configPeriodTwoType, configPricePeriodTwoQty, "period2");
-		fetchPeriodSafely(configPeriodThreeType, configPricePeriodThreeQty, "period3");
+		for (int period = 0; period < PERIOD_COUNT; period++)
+		{
+			try
+			{
+				retrieveItemPriceHistories(period);
+			}
+			catch (Exception e)
+			{
+				log.warn("Failed to fetch period {} prices ({} {})", period + 1, periodQuantities[period], periodTypes[period], e);
+			}
+		}
 	}
 
-	private void fetchPeriodSafely(PricePeriodType periodType, int periodQty, String periodNumber)
+	public int getPeriodQuantity(int period)
 	{
-		try
+		return periodQuantities[period];
+	}
+
+	public PricePeriodType getPeriodType(int period)
+	{
+		return periodTypes[period];
+	}
+
+	/**
+	 * @return the prices for each period for this item, using {@link PeriodPrices#EMPTY} where unavailable
+	 */
+	public List<PeriodPrices> getPeriodPrices(int itemId)
+	{
+		List<PeriodPrices> prices = new ArrayList<>(PERIOD_COUNT);
+		for (Map<Integer, PeriodPrices> periodPriceMap : periodPriceMaps)
 		{
-			retrieveItemPriceHistories(periodType, periodQty, periodNumber);
+			prices.add(periodPriceMap.getOrDefault(itemId, PeriodPrices.EMPTY));
 		}
-		catch (Exception e)
-		{
-			log.warn("Failed to fetch {} prices ({} {})", periodNumber, periodQty, periodType, e);
-		}
+		return prices;
 	}
 
 	private void scheduleRefresh()
@@ -192,6 +209,8 @@ public class MarketWatcherPlugin extends Plugin
 		typeMap.put(PricePeriodType.Weeks, UNIX_WEEK);
 		typeMap.put(PricePeriodType.Months, UNIX_MONTH);
 
+		scheduler = Executors.newScheduledThreadPool(2);
+
 		isActive = true;
 
 		panel = injector.getInstance(MarketWatcherPluginPanel.class);
@@ -201,8 +220,6 @@ public class MarketWatcherPlugin extends Plugin
 		navButton = NavigationButton.builder().tooltip(PLUGIN_NAME).icon(icon).priority(11).panel(panel).build();
 
 		clientToolbar.addNavigation(navButton);
-
-		this.dataManager = new MarketWatcherTabDataManager(this, client, configManager, itemManager, gson);
 
 		clientThread.invokeLater(() -> dataManager.loadData());
 
@@ -219,6 +236,7 @@ public class MarketWatcherPlugin extends Plugin
 		{
 			pendingConfigFuture.cancel(false);
 		}
+		scheduler.shutdownNow();
 		isActive = false;
 	}
 
@@ -260,14 +278,16 @@ public class MarketWatcherPlugin extends Plugin
 		});
 	}
 
-	public void addItemsToTab(MarketWatcherTab tab, List<String> itemNames)
+	public void addItemsToTab(MarketWatcherTab tab, List<MarketWatcherItem> selectedItems)
 	{
 		clientThread.invokeLater(() -> {
-			for (String itemName : itemNames)
+			for (MarketWatcherItem item : selectedItems)
 			{
-				MarketWatcherItem item = items.stream().filter(o -> o.getName().equals(itemName)).findFirst().orElse(null);
-				tab.getItems().add(item);
-				items.remove(item);
+				// Items are matched by ID; skip any that were removed while the dialog was open
+				if (items.remove(item))
+				{
+					tab.getItems().add(item);
+				}
 			}
 			dataManager.saveData();
 			processPendingConfigChanges();
@@ -321,14 +341,23 @@ public class MarketWatcherPlugin extends Plugin
 				processPendingConfigChanges();
 				SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 			}
+			else
+			{
+				SwingUtilities.invokeLater(() -> showDuplicateTabWarning(tabName));
+			}
 		});
+	}
+
+	private void showDuplicateTabWarning(String tabName)
+	{
+		JOptionPane.showMessageDialog(panel, "A tab named \"" + tabName + "\" already exists.", "Duplicate Tab Name", JOptionPane.WARNING_MESSAGE);
 	}
 
 	public void showHelp()
 	{
 		processPendingConfigChanges();
 		SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
-		JOptionPane.showMessageDialog(panel, "Each item displays price history with three price periods. Periods can be configured in plugin settings\nFor each time period, the price lows, mediums, and highs are color coded in rows. \nLows are the left number. Mediums are the center number. Highs are the right number.", "Information", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(panel, "Each item shows the average wiki prices from a 6-hour window at three points in the past.\nThe periods (e.g. 1 day ago, 1 week ago) can be configured in plugin settings.\nFor each period, the low, medium, and high prices are color coded in rows.\nLows are the left number. Mediums are the center number. Highs are the right number.", "Information", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	public void shiftItem(int itemIndex, boolean shiftUp)
@@ -438,6 +467,10 @@ public class MarketWatcherPlugin extends Plugin
 				processPendingConfigChanges();
 				SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 			}
+			else if (nameCheck != tab)
+			{
+				SwingUtilities.invokeLater(() -> showDuplicateTabWarning(tabName));
+			}
 		});
 	}
 
@@ -459,31 +492,23 @@ public class MarketWatcherPlugin extends Plugin
 		return items.contains(newItem);
 	}
 
-	private void retrieveItemPriceHistories(PricePeriodType periodType, int periodQty, String periodNumber) throws Exception
+	private void retrieveItemPriceHistories(int period) throws Exception
 	{
-		String resp = EMPTY_STRING;
-
 		long unixTimestamp = Instant.now().getEpochSecond();
-		String unixTimeString = EMPTY_STRING;
-
-		long periodDifference = (unixTimestamp - typeMap.get(periodType) * periodQty);
-
+		long periodDifference = unixTimestamp - (long) typeMap.get(periodTypes[period]) * periodQuantities[period];
 		long periodTimeBuffer = periodDifference % SECONDS_IN_SIX_HOURS;
 
-		unixTimeString = String.valueOf(periodDifference - periodTimeBuffer);
-
 		Request request = new Request.Builder()
-			.url(OSRS_WIKI_PRICES_6H_REQUEST_URL + unixTimeString)
+			.url(OSRS_WIKI_PRICES_6H_REQUEST_URL + (periodDifference - periodTimeBuffer))
 			.header("User-Agent", "Market Watcher Plugin")
 			.build();
 
-		okHttpClient = injector.getInstance(OkHttpClient.class);
-
+		String resp;
 		try (Response response = okHttpClient.newCall(request).execute())
 		{
 			if (!response.isSuccessful() || response.body() == null)
 			{
-				log.warn("Wiki price request for {} failed with HTTP {}", periodNumber, response.code());
+				log.warn("Wiki price request for period {} failed with HTTP {}", period + 1, response.code());
 				return;
 			}
 			resp = response.body().string();
@@ -492,63 +517,29 @@ public class MarketWatcherPlugin extends Plugin
 		WikiRequestResult wikiRequestResult = gson.fromJson(resp, WikiRequestResult.class);
 		if (wikiRequestResult == null || wikiRequestResult.getData() == null)
 		{
-			log.warn("Wiki price response for {} had no data", periodNumber);
+			log.warn("Wiki price response for period {} had no data", period + 1);
 			return;
 		}
 
+		Map<Integer, PeriodPrices> prices = new HashMap<>();
 		for (Map.Entry<Integer, WikiItemDetails> entry : wikiRequestResult.getData().entrySet())
 		{
-			String lowPrice = Integer.toString(entry.getValue().getAvgLowPrice());
-			String medPrice = NOT_AVAILABLE;
-			String highPrice = Integer.toString(entry.getValue().getAvgHighPrice());
-
-			if (highPrice.equals("0"))
-			{
-				highPrice = NOT_AVAILABLE;
-			}
-
-			if (lowPrice.equals("0"))
-			{
-				lowPrice = NOT_AVAILABLE;
-			}
-
-			if (!highPrice.equals(NOT_AVAILABLE) && !lowPrice.equals(NOT_AVAILABLE))
-			{
-				BigInteger highPriceInteger = BigInteger.valueOf(Integer.parseInt(highPrice));
-				BigInteger lowPriceInteger = BigInteger.valueOf(Integer.parseInt(lowPrice));
-
-				medPrice = String.valueOf(highPriceInteger.add(lowPriceInteger).divide(new BigInteger("2")));
-			}
-			int currentID = entry.getKey();
-			Map<String, String> timeFrameValuesMapping = itemPriceMap.get(currentID);
-
-			if (timeFrameValuesMapping == null)
-			{
-				Map<String, String> timeFrameValues = new ConcurrentHashMap<>();
-				timeFrameValues.put(periodNumber + LOW, lowPrice);
-				timeFrameValues.put(periodNumber + MED, medPrice);
-				timeFrameValues.put(periodNumber + HIGH, highPrice);
-				itemPriceMap.put(currentID, timeFrameValues);
-			}
-			else
-			{
-				timeFrameValuesMapping.put(periodNumber + LOW, lowPrice);
-				timeFrameValuesMapping.put(periodNumber + MED, medPrice);
-				timeFrameValuesMapping.put(periodNumber + HIGH, highPrice);
-			}
-
+			WikiItemDetails details = entry.getValue();
+			prices.put(entry.getKey(), PeriodPrices.fromWikiAverages(details.getAvgLowPrice(), details.getAvgHighPrice()));
 		}
+		periodPriceMaps.set(period, Collections.unmodifiableMap(prices));
+		log.debug("Loaded {} item prices for period {} ({} {})", prices.size(), period + 1, periodQuantities[period], periodTypes[period]);
 	}
 
 	private void updateCachedConfigs()
 	{
-		configPricePeriodOneQty = config.pricePeriodOneQty();
-		configPricePeriodTwoQty = config.pricePeriodTwoQty();
-		configPricePeriodThreeQty = config.pricePeriodThreeQty();
+		periodQuantities[0] = config.pricePeriodOneQty();
+		periodQuantities[1] = config.pricePeriodTwoQty();
+		periodQuantities[2] = config.pricePeriodThreeQty();
 
-		configPeriodOneType = config.pricePeriodOneType();
-		configPeriodTwoType = config.pricePeriodTwoType();
-		configPeriodThreeType = config.pricePeriodThreeType();
+		periodTypes[0] = config.pricePeriodOneType();
+		periodTypes[1] = config.pricePeriodTwoType();
+		periodTypes[2] = config.pricePeriodThreeType();
 
 	}
 

@@ -35,7 +35,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
+import com.marketwatcher.data.MarketWatcherItem;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -43,7 +45,7 @@ import java.util.List;
 
 public class MarketWatcherSelectionPanel
 {
-	private final JList<String> list;
+	private final JList<MarketWatcherItem> list;
 	private ActionListener okEvent;
 	private final JDialog dialog;
 	private static final String OK = "Ok";
@@ -52,7 +54,7 @@ public class MarketWatcherSelectionPanel
 	private static final String MESSAGE = "Select items to add to this tab";
 	private static final String SUBMESSAGE = "Ctrl+Click to select multiple items";
 
-	public MarketWatcherSelectionPanel(JPanel parent, String[] options)
+	public MarketWatcherSelectionPanel(JPanel parent, MarketWatcherItem[] options)
 	{
 		this.list = new JList<>(options);
 		this.list.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -72,8 +74,16 @@ public class MarketWatcherSelectionPanel
 		JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
 		centerPanel.setPreferredSize(new Dimension(250, 300));
 
-		DefaultListCellRenderer renderer = (DefaultListCellRenderer) list.getCellRenderer();
+		DefaultListCellRenderer renderer = new DefaultListCellRenderer()
+		{
+			@Override
+			public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus)
+			{
+				return super.getListCellRendererComponent(list, ((MarketWatcherItem) value).getName(), index, isSelected, cellHasFocus);
+			}
+		};
 		renderer.setHorizontalAlignment(SwingConstants.CENTER);
+		list.setCellRenderer(renderer);
 
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setViewportView(list);
@@ -96,7 +106,7 @@ public class MarketWatcherSelectionPanel
 		dialog.setTitle(TITLE);
 	}
 
-	public List<String> getSelectedItems()
+	public List<MarketWatcherItem> getSelectedItems()
 	{
 		return list.getSelectedValuesList();
 	}

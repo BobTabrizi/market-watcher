@@ -37,7 +37,6 @@ public final class Constants
 	public static final String M_MILLION = "M";
 	public static final String B_BILLION = "B";
 	public static final String NOT_AVAILABLE = "N/A";
-	public static final String NULL = "null";
 
 	public static final String TRUNCATION_STRING = "...";
 	public static final String STANDARD = "Standard";
@@ -50,30 +49,15 @@ public final class Constants
 
 	public static final int SECONDS_IN_SIX_HOURS = 21600;
 
-	public static final String ONE_WEEK = "oneWeek";
-	public static final String ONE_MONTH = "oneMonth";
-	public static final String THREE_MONTHS = "threeMonths";
-
 	public static final String LOW = "Low";
 	public static final String MED = "Med";
 	public static final String HIGH = "High";
 
-	public static final String PERIOD_ONE_LOW = "period1Low";
-	public static final String PERIOD_ONE_MED = "period1Med";
-	public static final String PERIOD_ONE_HIGH = "period1High";
-	public static final String PERIOD_TWO_LOW = "period2Low";
-	public static final String PERIOD_TWO_MED = "period2Med";
-	public static final String PERIOD_TWO_HIGH = "period2High";
-	public static final String PERIOD_THREE_LOW = "period3Low";
-	public static final String PERIOD_THREE_MED = "period3Med";
-	public static final String PERIOD_THREE_HIGH = "period3High";
 	public static final String GP = " gp";
 
 	public static final String OSRS_WIKI_PRICES_6H_REQUEST_URL = "https://prices.runescape.wiki/api/v1/osrs/6h?timestamp=";
 
 	public static final String OSRS_WIKI_ITEM_REQUEST_BASE_URL = "https://prices.runescape.wiki/osrs/item/";
-	public static final String COMMA = ",";
-	public static final String EMPTY_STRING = "";
 
 	public static final String PANEL_ICON_PATH = "/panelicon.png";
 	public static final String DELETE_ICON_PATH = "/deleteicon.png";

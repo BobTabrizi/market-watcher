@@ -39,10 +39,8 @@ import javax.inject.Inject;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static com.marketwatcher.utilities.Constants.*;
-import static com.marketwatcher.utilities.PriceUtils.createMarketWatchItemWithPriceMap;
 
 @Slf4j
 public class MarketWatcherTabDataManager
@@ -199,8 +197,6 @@ public class MarketWatcherTabDataManager
 	{
 		AsyncBufferedImage itemImage = itemManager.getImage(itemId);
 		String itemName = itemManager.getItemComposition(itemId).getName();
-		Map<String, String> itemPriceMap = plugin.getItemPriceMap().get(itemId);
-
-		return createMarketWatchItemWithPriceMap(itemImage, itemName, itemId, 0, itemPriceMap);
+		return new MarketWatcherItem(itemImage, itemName, itemId, 0, plugin.getPeriodPrices(itemId));
 	}
 }

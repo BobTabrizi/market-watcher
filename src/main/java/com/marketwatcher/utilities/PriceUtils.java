@@ -24,11 +24,7 @@
  */
 package com.marketwatcher.utilities;
 
-import com.marketwatcher.data.MarketWatcherItem;
-import net.runelite.client.util.AsyncBufferedImage;
-
 import java.text.DecimalFormat;
-import java.util.Map;
 
 import static com.marketwatcher.utilities.Constants.*;
 
@@ -149,80 +145,52 @@ public final class PriceUtils
 		return price;
 	}
 
-	public static String[] manageItemPrices(String lowPrice, String medPrice, String highPrice, String viewType)
+	/**
+	 * Formats a price for the price grid, abbreviating to K/M/B and padding to align columns.
+	 *
+	 * @param price    the price, or null if unavailable
+	 * @param viewType {@link Constants#STANDARD} or {@link Constants#COMPACT}
+	 */
+	public static String formatPrice(Integer price, String viewType)
 	{
-		final DecimalFormat df = new DecimalFormat("0.0");
-		final DecimalFormat df2 = new DecimalFormat("0.00");
-		highPrice = truncatePrices(highPrice, df, df2, viewType);
-		medPrice = truncatePrices(medPrice, df, df2, viewType);
-		lowPrice = truncatePrices(lowPrice, df, df2, viewType);
-
-		return new String[]{lowPrice, medPrice, highPrice};
-	}
-
-	public static String truncatePrices(String price, DecimalFormat df, DecimalFormat df2, String viewType)
-	{
-		if (price.equals(NULL))
-		{
-			price = NOT_AVAILABLE;
-			return price;
-		}
-
-		if (price.length() >= 5 && price.length() < 7)
-		{
-			price = df.format((float) Integer.parseInt(price) / 1000) + K_THOUSAND;
-		}
-		else if (price.length() >= 7 && price.length() < 10)
-		{
-			price = df.format((float) Integer.parseInt(price) / 1000000) + M_MILLION;
-		}
-		else if (price.length() >= 10)
-		{
-			price = df2.format((float) Integer.parseInt(price) / 1000000000) + B_BILLION;
-		}
+		String formatted = price == null ? NOT_AVAILABLE : abbreviatePrice(price);
 
 		if (viewType.equals(STANDARD))
 		{
-			price = standardPricePadder(price);
+			return standardPricePadder(formatted);
 		}
 		else if (viewType.equals(COMPACT))
 		{
-			price = compactPricePadder(price);
+			return compactPricePadder(formatted);
 		}
-		return price;
+		return formatted;
 	}
 
-	public static MarketWatcherItem createMarketWatchItemWithPriceMap(AsyncBufferedImage itemImage, String itemName, int itemId, long itemPrice, Map<String, String> itemPriceMap)
+	static String abbreviatePrice(int price)
 	{
-		String periodOneLow = NOT_AVAILABLE;
-		String periodOneMed = NOT_AVAILABLE;
-		String periodOneHigh = NOT_AVAILABLE;
+		final DecimalFormat df = new DecimalFormat("0.0");
+		final DecimalFormat df2 = new DecimalFormat("0.00");
 
-		String periodTwoLow = NOT_AVAILABLE;
-		String periodTwoMed = NOT_AVAILABLE;
-		String periodTwoHigh = NOT_AVAILABLE;
-
-		String periodThreeLow = NOT_AVAILABLE;
-		String periodThreeMed = NOT_AVAILABLE;
-		String periodThreeHigh = NOT_AVAILABLE;
-
-		if (itemPriceMap != null)
+		if (price >= 1000000)
 		{
-			periodOneLow = itemPriceMap.get(PERIOD_ONE_LOW) != null ? itemPriceMap.get(PERIOD_ONE_LOW) : NOT_AVAILABLE;
-			periodOneMed = itemPriceMap.get(PERIOD_ONE_MED) != null ? itemPriceMap.get(PERIOD_ONE_MED) : NOT_AVAILABLE;
-			periodOneHigh = itemPriceMap.get(PERIOD_ONE_HIGH) != null ? itemPriceMap.get(PERIOD_ONE_HIGH) : NOT_AVAILABLE;
-
-			periodTwoLow = itemPriceMap.get(PERIOD_TWO_LOW) != null ? itemPriceMap.get(PERIOD_TWO_LOW) : NOT_AVAILABLE;
-			periodTwoMed = itemPriceMap.get(PERIOD_TWO_MED) != null ? itemPriceMap.get(PERIOD_TWO_MED) : NOT_AVAILABLE;
-			periodTwoHigh = itemPriceMap.get(PERIOD_TWO_HIGH) != null ? itemPriceMap.get(PERIOD_TWO_HIGH) : NOT_AVAILABLE;
-
-			periodThreeLow = itemPriceMap.get(PERIOD_THREE_LOW) != null ? itemPriceMap.get(PERIOD_THREE_LOW) : NOT_AVAILABLE;
-			periodThreeMed = itemPriceMap.get(PERIOD_THREE_MED) != null ? itemPriceMap.get(PERIOD_THREE_MED) : NOT_AVAILABLE;
-			periodThreeHigh = itemPriceMap.get(PERIOD_THREE_HIGH) != null ? itemPriceMap.get(PERIOD_THREE_HIGH) : NOT_AVAILABLE;
+			String millions = df.format((float) price / 1000000);
+			// Prices just under 1B round up to 1000.0, so show them in the next unit instead
+			if (price < 1000000000 && !millions.equals("1000.0"))
+			{
+				return millions + M_MILLION;
+			}
+			return df2.format((float) price / 1000000000) + B_BILLION;
 		}
-
-		return new MarketWatcherItem(itemImage, itemName, itemId, itemPrice, periodOneLow, periodOneMed, periodOneHigh, periodTwoLow, periodTwoMed, periodTwoHigh, periodThreeLow, periodThreeMed, periodThreeHigh);
+		if (price >= 10000)
+		{
+			String thousands = df.format((float) price / 1000);
+			// Prices just under 1M round up to 1000.0, so show them in the next unit instead
+			if (!thousands.equals("1000.0"))
+			{
+				return thousands + K_THOUSAND;
+			}
+			return df.format((float) price / 1000000) + M_MILLION;
+		}
+		return Integer.toString(price);
 	}
-
-
 }

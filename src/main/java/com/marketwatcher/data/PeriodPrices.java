@@ -24,48 +24,29 @@
  */
 package com.marketwatcher.data;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Value;
 
-import java.util.List;
-
-@AllArgsConstructor
-public class MarketWatcherTab
+/**
+ * Average wiki prices for one price period. A null price means no trades were recorded.
+ */
+@Value
+public class PeriodPrices
 {
-	@Getter
-	@Setter
-	private String name;
+	public static final PeriodPrices EMPTY = new PeriodPrices(null, null, null);
 
-	@Getter
-	@Setter
-	private boolean collapsed;
+	Integer low;
+	Integer med;
+	Integer high;
 
-	@Getter
-	private final List<MarketWatcherItem> items;
-
-	public MarketWatcherTab(String name, List<MarketWatcherItem> items)
+	/**
+	 * Builds period prices from the wiki's 6h averages, where 0 means no trades in that window.
+	 */
+	public static PeriodPrices fromWikiAverages(int avgLowPrice, int avgHighPrice)
 	{
-		this.name = name;
-		collapsed = false;
-		this.items = items;
-	}
-
-	@Override
-	public boolean equals(Object obj)
-	{
-		if (!(obj instanceof MarketWatcherTab))
-		{
-			return false;
-		}
-
-		final MarketWatcherTab tab = (MarketWatcherTab) obj;
-		return tab.getName().equals(this.name);
-	}
-
-	@Override
-	public int hashCode()
-	{
-		return name.hashCode();
+		Integer low = avgLowPrice > 0 ? avgLowPrice : null;
+		Integer high = avgHighPrice > 0 ? avgHighPrice : null;
+		// long avoids int overflow when both prices are near Integer.MAX_VALUE
+		Integer med = low != null && high != null ? (int) (((long) low + high) / 2) : null;
+		return new PeriodPrices(low, med, high);
 	}
 }
