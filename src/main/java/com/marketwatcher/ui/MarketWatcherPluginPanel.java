@@ -416,7 +416,7 @@ public class MarketWatcherPluginPanel extends PluginPanel
 
 			int itemId = item.getId();
 			AsyncBufferedImage itemImage = itemManager.getImage(itemId);
-			int itemPrice = useActivelyTradedPrice ? itemManager.getWikiPrice(item) : item.getPrice();
+			long itemPrice = useActivelyTradedPrice ? itemManager.getWikiPrice(item) : item.getPrice();
 
 			Map<String, String> itemPriceMap = plugin.getItemPriceMap().get(itemId);
 

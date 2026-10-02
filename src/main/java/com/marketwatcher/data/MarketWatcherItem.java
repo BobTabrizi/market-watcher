@@ -46,7 +46,7 @@ public class MarketWatcherItem implements Comparable<MarketWatcherItem>
 
 	@Getter
 	@Setter
-	private int gePrice;
+	private long gePrice;
 
 	@Getter
 	@Setter
@@ -77,7 +77,7 @@ public class MarketWatcherItem implements Comparable<MarketWatcherItem>
 	private String periodThreeHigh;
 
 
-	public MarketWatcherItem(AsyncBufferedImage itemImage, String itemName, int itemID, int itemPrice)
+	public MarketWatcherItem(AsyncBufferedImage itemImage, String itemName, int itemID, long itemPrice)
 	{
 		image = itemImage;
 		name = itemName;
@@ -109,6 +109,6 @@ public class MarketWatcherItem implements Comparable<MarketWatcherItem>
 	@Override
 	public int compareTo(MarketWatcherItem other)
 	{
-		return Integer.compare(gePrice, other.getGePrice());
+		return Long.compare(gePrice, other.getGePrice());
 	}
 }

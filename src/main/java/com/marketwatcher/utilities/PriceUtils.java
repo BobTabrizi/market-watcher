@@ -192,7 +192,7 @@ public final class PriceUtils
 		return price;
 	}
 
-	public static MarketWatcherItem createMarketWatchItemWithPriceMap(AsyncBufferedImage itemImage, String itemName, int itemId, int itemPrice, Map<String, String> itemPriceMap)
+	public static MarketWatcherItem createMarketWatchItemWithPriceMap(AsyncBufferedImage itemImage, String itemName, int itemId, long itemPrice, Map<String, String> itemPriceMap)
 	{
 		String periodOneLow = NOT_AVAILABLE;
 		String periodOneMed = NOT_AVAILABLE;
