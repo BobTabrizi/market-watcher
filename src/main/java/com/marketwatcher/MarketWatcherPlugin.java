@@ -112,7 +112,7 @@ public class MarketWatcherPlugin extends Plugin
 
 	@Getter
 	@Setter
-	Map<Integer, Map<String, String>> itemPriceMap = new HashMap<>();
+	Map<Integer, Map<String, String>> itemPriceMap = new ConcurrentHashMap<>();
 
 	private OkHttpClient okHttpClient;
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
@@ -138,6 +138,7 @@ public class MarketWatcherPlugin extends Plugin
 	public PricePeriodType configPeriodThreeType;
 	private final Runnable dataRefresh = this::refreshItemData;
 	private ScheduledFuture<?> refreshHandler;
+	private ScheduledFuture<?> pendingConfigFuture;
 	private final ConcurrentHashMap.KeySetView<String, ?> pendingConfigChanges = ConcurrentHashMap.newKeySet();
 
 	private HashMap<PricePeriodType, Integer> typeMap = new HashMap<PricePeriodType, Integer>();
@@ -146,26 +147,40 @@ public class MarketWatcherPlugin extends Plugin
 	// Refresh item data. Every 12h by default.
 	public void refreshItemData()
 	{
+		fetchItemData();
+		// loadData rebuilds items from the new price map, updates GE prices and repaints the panel on the client thread
+		clientThread.invokeLater(() -> dataManager.loadData());
+	}
+
+	// Retrieve item price histories for each configured period.
+	// Store prices in a map to be accessed during search at any pointer later on.
+	// Each period is fetched independently so one failed request doesn't skip the others.
+	protected void fetchItemData()
+	{
+		fetchPeriodSafely(configPeriodOneType, configPricePeriodOneQty, "period1");
+		fetchPeriodSafely(configPeriodTwoType, configPricePeriodTwoQty, "period2");
+		fetchPeriodSafely(configPeriodThreeType, configPricePeriodThreeQty, "period3");
+	}
+
+	private void fetchPeriodSafely(PricePeriodType periodType, int periodQty, String periodNumber)
+	{
 		try
 		{
-			fetchItemData();
-			clientThread.invokeLater(() -> dataManager.loadData());
-			SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
+			retrieveItemPriceHistories(periodType, periodQty, periodNumber);
 		}
 		catch (Exception e)
 		{
-			System.out.println(e);
+			log.warn("Failed to fetch {} prices ({} {})", periodNumber, periodQty, periodType, e);
 		}
-		updateItemPrices();
 	}
 
-	// Retrieve item price histories for one week, month, and three months.
-	// Store prices in a map to be accessed during search at any pointer later on.
-	protected void fetchItemData() throws Exception
+	private void scheduleRefresh()
 	{
-		retrieveItemPriceHistories(configPeriodOneType, configPricePeriodOneQty, "period1");
-		retrieveItemPriceHistories(configPeriodTwoType, configPricePeriodTwoQty, "period2");
-		retrieveItemPriceHistories(configPeriodThreeType, configPricePeriodTwoQty, "period3");
+		if (refreshHandler != null)
+		{
+			refreshHandler.cancel(false);
+		}
+		refreshHandler = scheduler.scheduleAtFixedRate(dataRefresh, 0, config.refreshInterval(), TimeUnit.HOURS);
 	}
 
 	@Override
@@ -176,8 +191,6 @@ public class MarketWatcherPlugin extends Plugin
 		typeMap.put(PricePeriodType.Days, UNIX_DAY);
 		typeMap.put(PricePeriodType.Weeks, UNIX_WEEK);
 		typeMap.put(PricePeriodType.Months, UNIX_MONTH);
-
-		refreshHandler = scheduler.scheduleAtFixedRate(dataRefresh, 0, config.refreshInterval(), TimeUnit.HOURS);
 
 		isActive = true;
 
@@ -192,6 +205,9 @@ public class MarketWatcherPlugin extends Plugin
 		this.dataManager = new MarketWatcherTabDataManager(this, client, configManager, itemManager, gson);
 
 		clientThread.invokeLater(() -> dataManager.loadData());
+
+		// Start refreshing only once the panel and data manager exist
+		scheduleRefresh();
 	}
 
 	@Override
@@ -199,6 +215,10 @@ public class MarketWatcherPlugin extends Plugin
 	{
 		clientToolbar.removeNavigation(navButton);
 		refreshHandler.cancel(true);
+		if (pendingConfigFuture != null)
+		{
+			pendingConfigFuture.cancel(false);
+		}
 		isActive = false;
 	}
 
@@ -461,14 +481,20 @@ public class MarketWatcherPlugin extends Plugin
 
 		try (Response response = okHttpClient.newCall(request).execute())
 		{
+			if (!response.isSuccessful() || response.body() == null)
+			{
+				log.warn("Wiki price request for {} failed with HTTP {}", periodNumber, response.code());
+				return;
+			}
 			resp = response.body().string();
-		}
-		catch (Exception e)
-		{
-			System.out.println(e);
 		}
 
 		WikiRequestResult wikiRequestResult = gson.fromJson(resp, WikiRequestResult.class);
+		if (wikiRequestResult == null || wikiRequestResult.getData() == null)
+		{
+			log.warn("Wiki price response for {} had no data", periodNumber);
+			return;
+		}
 
 		for (Map.Entry<Integer, WikiItemDetails> entry : wikiRequestResult.getData().entrySet())
 		{
@@ -498,7 +524,7 @@ public class MarketWatcherPlugin extends Plugin
 
 			if (timeFrameValuesMapping == null)
 			{
-				Map<String, String> timeFrameValues = new HashMap<>();
+				Map<String, String> timeFrameValues = new ConcurrentHashMap<>();
 				timeFrameValues.put(periodNumber + LOW, lowPrice);
 				timeFrameValues.put(periodNumber + MED, medPrice);
 				timeFrameValues.put(periodNumber + HIGH, highPrice);
@@ -536,6 +562,13 @@ public class MarketWatcherPlugin extends Plugin
 		}
 
 		pendingConfigChanges.add(event.getKey());
+
+		// Debounce so rapid changes (e.g. clicking a spinner) are applied as one batch
+		if (pendingConfigFuture != null)
+		{
+			pendingConfigFuture.cancel(false);
+		}
+		pendingConfigFuture = scheduler.schedule(this::processPendingConfigChanges, 1, TimeUnit.SECONDS);
 	}
 
 
@@ -574,12 +607,18 @@ public class MarketWatcherPlugin extends Plugin
 						}
 					}
 
-					if (refetchData)
+					if (pendingConfigChanges.contains(AUTO_REFRESH_INTERVAL))
+					{
+						// Reschedule with the new interval; this also refreshes immediately
+						scheduleRefresh();
+					}
+					else if (refetchData)
 					{
 						scheduler.execute(dataRefresh);
-						clientThread.invokeLater(() -> dataManager.loadData());
-						SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 					}
+
+					// Period labels and color blind mode are read from config when the panel is rebuilt
+					SwingUtilities.invokeLater(() -> panel.updateMarketWatchPanel());
 				}
 			}
 			catch (Throwable ex)
