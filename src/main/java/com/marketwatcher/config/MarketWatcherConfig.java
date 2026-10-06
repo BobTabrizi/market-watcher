@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Bob Tabrizi
+ * Copyright (c) 2026, Bob Tabrizi
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
