@@ -41,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Inject;
 import javax.swing.*;
 
@@ -134,36 +135,118 @@ public class MarketWatcherPlugin extends Plugin
 	private final int[] periodQuantities = new int[PERIOD_COUNT];
 	private final PricePeriodType[] periodTypes = new PricePeriodType[PERIOD_COUNT];
 	private final Runnable dataRefresh = this::refreshItemData;
-	private ScheduledFuture<?> refreshHandler;
+	private volatile ScheduledFuture<?> refreshHandler;
 	private ScheduledFuture<?> pendingConfigFuture;
 	private final ConcurrentHashMap.KeySetView<String, ?> pendingConfigChanges = ConcurrentHashMap.newKeySet();
 
 	private HashMap<PricePeriodType, Integer> typeMap = new HashMap<PricePeriodType, Integer>();
 
+	// Minimum time between manual refreshes, counted from the start of the last refresh of any kind
+	public static final long MANUAL_REFRESH_COOLDOWN_MILLIS = TimeUnit.SECONDS.toMillis(60);
+
+	// Refresh status for the panel. Written on the refresh threads and read on the Swing thread.
+	// Refreshes are counted rather than flagged because a settings change can start one while another is running.
+	private final AtomicInteger activeRefreshes = new AtomicInteger();
+	private volatile long lastRefreshAttemptMillis;
+	// When every period last loaded successfully, or 0 if they haven't yet
+	@Getter
+	private volatile long lastRefreshMillis;
+	@Getter
+	private volatile boolean lastRefreshFailed;
 
 	// Refresh item data. Every 12h by default.
 	public void refreshItemData()
 	{
-		fetchItemData();
-		// loadData rebuilds items from the new price map, updates GE prices and repaints the panel on the client thread
-		clientThread.invokeLater(() -> dataManager.loadData());
+		activeRefreshes.incrementAndGet();
+		lastRefreshAttemptMillis = System.currentTimeMillis();
+		notifyRefreshStatusChanged();
+		try
+		{
+			final boolean allLoaded = fetchItemData();
+			lastRefreshFailed = !allLoaded;
+			if (allLoaded)
+			{
+				lastRefreshMillis = System.currentTimeMillis();
+			}
+		}
+		finally
+		{
+			activeRefreshes.decrementAndGet();
+			// loadData rebuilds items from the new price map, updates GE prices and repaints the panel on the client thread
+			clientThread.invokeLater(() -> dataManager.loadData());
+			notifyRefreshStatusChanged();
+		}
 	}
 
 	// Retrieve item price histories for each configured period.
 	// Store prices in a map to be accessed during search at any pointer later on.
 	// Each period is fetched independently so one failed request doesn't skip the others.
-	protected void fetchItemData()
+	// Returns whether every period loaded.
+	protected boolean fetchItemData()
 	{
+		boolean allLoaded = true;
 		for (int period = 0; period < PERIOD_COUNT; period++)
 		{
 			try
 			{
-				retrieveItemPriceHistories(period);
+				allLoaded &= retrieveItemPriceHistories(period);
 			}
 			catch (Exception e)
 			{
+				allLoaded = false;
 				log.warn("Failed to fetch period {} prices ({} {})", period + 1, periodQuantities[period], periodTypes[period], e);
 			}
+		}
+		return allLoaded;
+	}
+
+	public boolean isRefreshing()
+	{
+		return activeRefreshes.get() > 0;
+	}
+
+	/**
+	 * @return milliseconds until a manual refresh is allowed, or 0 if it is allowed now
+	 */
+	public long getRefreshCooldownRemainingMillis()
+	{
+		return Math.max(0, lastRefreshAttemptMillis + MANUAL_REFRESH_COOLDOWN_MILLIS - System.currentTimeMillis());
+	}
+
+	/**
+	 * @return milliseconds until the next automatic refresh, or -1 if none is scheduled
+	 */
+	public long getMillisUntilNextAutoRefresh()
+	{
+		final ScheduledFuture<?> handler = refreshHandler;
+		if (handler == null || handler.isCancelled())
+		{
+			return -1;
+		}
+		return Math.max(0, handler.getDelay(TimeUnit.MILLISECONDS));
+	}
+
+	/**
+	 * Refreshes prices now unless a refresh is running or the cooldown hasn't passed.
+	 * Restarts the automatic schedule, so the next automatic refresh is a full interval later.
+	 */
+	public void refreshNow()
+	{
+		if (isRefreshing() || getRefreshCooldownRemainingMillis() > 0)
+		{
+			return;
+		}
+		// Start the cooldown now, so repeated clicks before the refresh begins are ignored
+		lastRefreshAttemptMillis = System.currentTimeMillis();
+		scheduleRefresh();
+	}
+
+	private void notifyRefreshStatusChanged()
+	{
+		final MarketWatcherPluginPanel currentPanel = panel;
+		if (currentPanel != null)
+		{
+			SwingUtilities.invokeLater(currentPanel::updateRefreshStatus);
 		}
 	}
 
@@ -200,7 +283,7 @@ public class MarketWatcherPlugin extends Plugin
 		return prices;
 	}
 
-	private void scheduleRefresh()
+	private synchronized void scheduleRefresh()
 	{
 		if (refreshHandler != null)
 		{
@@ -246,6 +329,7 @@ public class MarketWatcherPlugin extends Plugin
 			pendingConfigFuture.cancel(false);
 		}
 		scheduler.shutdownNow();
+		panel.shutdown();
 		isActive = false;
 	}
 
@@ -489,7 +573,10 @@ public class MarketWatcherPlugin extends Plugin
 		return items.contains(newItem);
 	}
 
-	private void retrieveItemPriceHistories(int period) throws Exception
+	/**
+	 * @return whether the period's prices were loaded
+	 */
+	private boolean retrieveItemPriceHistories(int period) throws Exception
 	{
 		long unixTimestamp = Instant.now().getEpochSecond();
 		long periodDifference = unixTimestamp - (long) typeMap.get(periodTypes[period]) * periodQuantities[period];
@@ -506,7 +593,7 @@ public class MarketWatcherPlugin extends Plugin
 			if (!response.isSuccessful() || response.body() == null)
 			{
 				log.warn("Wiki price request for period {} failed with HTTP {}", period + 1, response.code());
-				return;
+				return false;
 			}
 			resp = response.body().string();
 		}
@@ -515,7 +602,7 @@ public class MarketWatcherPlugin extends Plugin
 		if (wikiRequestResult == null || wikiRequestResult.getData() == null)
 		{
 			log.warn("Wiki price response for period {} had no data", period + 1);
-			return;
+			return false;
 		}
 
 		Map<Integer, PeriodPrices> prices = new HashMap<>();
@@ -526,6 +613,7 @@ public class MarketWatcherPlugin extends Plugin
 		}
 		periodPriceMaps.set(period, Collections.unmodifiableMap(prices));
 		log.debug("Loaded {} item prices for period {} ({} {})", prices.size(), period + 1, periodQuantities[period], periodTypes[period]);
+		return true;
 	}
 
 	private void updateCachedConfigs()

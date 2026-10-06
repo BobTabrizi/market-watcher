@@ -33,7 +33,9 @@ import static com.marketwatcher.utilities.Constants.*;
 
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.RuneLiteConfig;
+import com.marketwatcher.utilities.TimeFormat;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.ui.components.PluginErrorPanel;
@@ -57,6 +59,7 @@ import javax.swing.event.DocumentListener;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
@@ -64,6 +67,10 @@ import java.awt.GridBagLayout;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 
 public class MarketWatcherPluginPanel extends PluginPanel
 {
@@ -91,6 +98,9 @@ public class MarketWatcherPluginPanel extends PluginPanel
 	private static final String SEARCH_ERROR_MESSAGE = "No items were found with that name, please try again.";
 	private static final String FILTER_TOOLTIP = "Search your tracked items";
 	private static final String NO_FILTER_MATCHES = "No tracked items match your search.";
+	private static final String REFRESH_TOOLTIP = "Refresh prices now";
+	private static final String UPDATING_PRICES = "Updating prices...";
+	private static final DateTimeFormatter CLOCK_FORMAT = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
 	private static final String CANCEL = "Cancel";
 	private static final ImageIcon INFO_ICON;
 	private static final ImageIcon INFO_HOVER_ICON;
@@ -103,6 +113,9 @@ public class MarketWatcherPluginPanel extends PluginPanel
 
 	private static final ImageIcon CANCEL_ICON;
 	private static final ImageIcon CANCEL_HOVER_ICON;
+	private static final ImageIcon REFRESH_ICON;
+	private static final ImageIcon REFRESH_HOVER_ICON;
+	private static final ImageIcon REFRESH_DISABLED_ICON;
 	private final JLabel cancelItem = new JLabel(CANCEL_ICON);
 
 	private final CardLayout centerCard = new CardLayout();
@@ -127,6 +140,12 @@ public class MarketWatcherPluginPanel extends PluginPanel
 
 	private final List<MarketWatcherItem> searchItems = new ArrayList<>();
 
+	private final JLabel refreshStatus = new JLabel();
+	private final JLabel refreshButton = new JLabel(REFRESH_ICON);
+	private boolean refreshButtonHovered;
+	// Keeps the refresh status and cooldown current while the panel is visible
+	private final Timer refreshStatusTimer = new Timer(1000, e -> updateRefreshStatus());
+
 	static
 	{
 		final BufferedImage infoImage = ImageUtil.loadImageResource(MarketWatcherPluginPanel.class, INFO_ICON_PATH);
@@ -144,6 +163,11 @@ public class MarketWatcherPluginPanel extends PluginPanel
 		final BufferedImage cancelImage = ImageUtil.loadImageResource(MarketWatcherPluginPanel.class, CANCEL_ICON_PATH);
 		CANCEL_ICON = new ImageIcon(cancelImage);
 		CANCEL_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(cancelImage, 0.53f));
+
+		final BufferedImage refreshImage = ImageUtil.loadImageResource(MarketWatcherPluginPanel.class, REFRESH_ICON_PATH);
+		REFRESH_ICON = new ImageIcon(refreshImage);
+		REFRESH_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(refreshImage, 0.53f));
+		REFRESH_DISABLED_ICON = new ImageIcon(ImageUtil.alphaOffset(refreshImage, 0.25f));
 	}
 
 
@@ -315,8 +339,49 @@ public class MarketWatcherPluginPanel extends PluginPanel
 			}
 		});
 
+		// Price refresh status and button, under the watchlist search
+		refreshStatus.setFont(FontManager.getRunescapeSmallFont());
+		refreshStatus.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+
+		refreshButton.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mousePressed(MouseEvent e)
+			{
+				plugin.refreshNow();
+				updateRefreshStatus();
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				refreshButtonHovered = true;
+				updateRefreshButton();
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				refreshButtonHovered = false;
+				updateRefreshButton();
+			}
+		});
+
+		// The status text sits right next to the button, aligned to the right of the panel
+		JPanel refreshControls = new JPanel(new BorderLayout(5, 0));
+		refreshControls.add(refreshStatus, BorderLayout.CENTER);
+		refreshControls.add(refreshButton, BorderLayout.EAST);
+
+		JPanel refreshRow = new JPanel(new BorderLayout());
+		refreshRow.setBorder(new EmptyBorder(6, 2, 0, 0));
+		refreshRow.add(refreshControls, BorderLayout.EAST);
+
+		JPanel watchlistHeader = new JPanel(new BorderLayout());
+		watchlistHeader.add(filterBar, BorderLayout.NORTH);
+		watchlistHeader.add(refreshRow, BorderLayout.SOUTH);
+
 		// Market Watch Panel
-		marketWatcherPanel.add(filterBar, BorderLayout.NORTH);
+		marketWatcherPanel.add(watchlistHeader, BorderLayout.NORTH);
 		marketWatcherPanel.add(marketWrapper, BorderLayout.CENTER);
 
 		// Search Results Panel
@@ -544,6 +609,106 @@ public class MarketWatcherPluginPanel extends PluginPanel
 
 		validate();
 		repaint();
+	}
+
+	/**
+	 * Shows when prices were last updated, with the next automatic refresh in the tooltip,
+	 * and enables the refresh button once its cooldown has passed. Called on the Swing thread.
+	 */
+	public void updateRefreshStatus()
+	{
+		final long now = System.currentTimeMillis();
+		final boolean refreshing = plugin.isRefreshing();
+		final boolean failed = plugin.isLastRefreshFailed();
+		final long lastRefresh = plugin.getLastRefreshMillis();
+		final long untilNextAuto = plugin.getMillisUntilNextAutoRefresh();
+
+		String text;
+		if (refreshing)
+		{
+			text = UPDATING_PRICES;
+		}
+		else if (lastRefresh == 0)
+		{
+			text = failed ? "Couldn't load prices" : "Loading prices...";
+		}
+		else
+		{
+			text = "Updated " + TimeFormat.formatAgo(now - lastRefresh);
+		}
+		refreshStatus.setText(text);
+		refreshStatus.setForeground(failed && !refreshing ? ColorScheme.PROGRESS_ERROR_COLOR : ColorScheme.LIGHT_GRAY_COLOR);
+
+		final StringBuilder tooltip = new StringBuilder("<html>");
+		if (lastRefresh > 0)
+		{
+			tooltip.append("Prices last updated at ").append(formatClockTime(lastRefresh)).append('.');
+		}
+		if (failed && !refreshing)
+		{
+			tooltip.append(lastRefresh > 0
+				? "<br>The last update failed, so some prices may be out of date."
+				: "Prices couldn't be loaded from the OSRS Wiki.");
+		}
+		tooltip.append(tooltip.length() > "<html>".length() ? "<br>" : "")
+			.append("Prices refresh automatically every ").append(plugin.getConfig().refreshInterval()).append(" hours.");
+		if (untilNextAuto >= 0)
+		{
+			tooltip.append("<br>Next refresh in ").append(TimeFormat.formatUntil(untilNextAuto))
+				.append(", at ").append(formatClockTime(now + untilNextAuto)).append('.');
+		}
+		tooltip.append("</html>");
+		refreshStatus.setToolTipText(tooltip.toString());
+
+		updateRefreshButton();
+	}
+
+	private void updateRefreshButton()
+	{
+		final boolean refreshing = plugin.isRefreshing();
+		final long cooldown = plugin.getRefreshCooldownRemainingMillis();
+		final boolean available = !refreshing && cooldown == 0;
+
+		refreshButton.setIcon(!available ? REFRESH_DISABLED_ICON : refreshButtonHovered ? REFRESH_HOVER_ICON : REFRESH_ICON);
+		refreshButton.setCursor(Cursor.getPredefinedCursor(available ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
+		if (refreshing)
+		{
+			refreshButton.setToolTipText(UPDATING_PRICES);
+		}
+		else if (!available)
+		{
+			refreshButton.setToolTipText("Prices were just updated. You can refresh again in " + TimeFormat.formatSeconds(cooldown) + ".");
+		}
+		else
+		{
+			refreshButton.setToolTipText(REFRESH_TOOLTIP);
+		}
+	}
+
+	private static String formatClockTime(long epochMillis)
+	{
+		return CLOCK_FORMAT.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()));
+	}
+
+	@Override
+	public void onActivate()
+	{
+		updateRefreshStatus();
+		refreshStatusTimer.start();
+	}
+
+	@Override
+	public void onDeactivate()
+	{
+		refreshStatusTimer.stop();
+	}
+
+	/**
+	 * Stops the status timer when the plugin shuts down.
+	 */
+	public void shutdown()
+	{
+		refreshStatusTimer.stop();
 	}
 
 	public void containsItemWarning()

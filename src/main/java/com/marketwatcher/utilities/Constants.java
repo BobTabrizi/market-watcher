@@ -71,5 +71,6 @@ public final class Constants
 	public static final String ADD_ICON_PATH = "/addicon.png";
 	public static final String ADD_TAB_ICON_PATH = "/addtabicon.png";
 	public static final String CANCEL_ICON_PATH = "/cancelicon.png";
+	public static final String REFRESH_ICON_PATH = "/refreshicon.png";
 
 }
