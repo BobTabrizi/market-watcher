@@ -24,58 +24,31 @@
  */
 package com.marketwatcher.data;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.ArrayList;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
-import java.util.List;
-import java.util.Locale;
-
-@AllArgsConstructor
-public class MarketWatcherTab
+public class MarketWatcherTabTest
 {
-	@Getter
-	@Setter
-	private String name;
-
-	@Getter
-	@Setter
-	private boolean collapsed;
-
-	@Getter
-	private final List<MarketWatcherItem> items;
-
-	public MarketWatcherTab(String name, List<MarketWatcherItem> items)
+	@Test
+	public void emptyFilterMatchesEveryTab()
 	{
-		this.name = name;
-		collapsed = false;
-		this.items = items;
+		assertTrue(new MarketWatcherTab("Weapons", new ArrayList<>()).nameMatches(""));
 	}
 
-	/**
-	 * @param filter search text, already trimmed and lowercased; an empty filter matches every tab
-	 * @return whether this tab's name contains the filter, ignoring case
-	 */
-	public boolean nameMatches(String filter)
+	@Test
+	public void matchesAnyPartOfNameIgnoringCase()
 	{
-		return filter.isEmpty() || name.toLowerCase(Locale.ROOT).contains(filter);
+		MarketWatcherTab tab = new MarketWatcherTab("Weapons", new ArrayList<>());
+		assertTrue(tab.nameMatches("weapons"));
+		assertTrue(tab.nameMatches("weap"));
+		assertTrue(tab.nameMatches("pons"));
 	}
 
-	@Override
-	public boolean equals(Object obj)
+	@Test
+	public void rejectsNonMatchingFilter()
 	{
-		if (!(obj instanceof MarketWatcherTab))
-		{
-			return false;
-		}
-
-		final MarketWatcherTab tab = (MarketWatcherTab) obj;
-		return tab.getName().equals(this.name);
-	}
-
-	@Override
-	public int hashCode()
-	{
-		return name.hashCode();
+		assertFalse(new MarketWatcherTab("Weapons", new ArrayList<>()).nameMatches("bow"));
 	}
 }

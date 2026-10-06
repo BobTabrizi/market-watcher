@@ -6,6 +6,8 @@ Watches market prices of items using OSRS Wiki Prices: https://prices.runescape.
 
 Search for items to track and optionally add items to tabs to group them together.
 
+Use the search bar at the top of your watchlist to find tracked items by item or tab name. Tabs containing a match open automatically; a tab whose name matches shows all of its items.
+
 Each item displays its current Grand Exchange price, plus the wiki's average low, medium, and high prices from three points in the past. Each of these is the average over a 6-hour window, not a range across the whole period.
 
 Default Time Periods:

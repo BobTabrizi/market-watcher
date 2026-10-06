@@ -25,6 +25,7 @@
 package com.marketwatcher.data;
 
 import java.util.List;
+import java.util.Locale;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -56,6 +57,15 @@ public class MarketWatcherItem implements Comparable<MarketWatcherItem>
 		this.itemId = itemId;
 		this.gePrice = gePrice;
 		this.periodPrices = periodPrices;
+	}
+
+	/**
+	 * @param filter search text, already trimmed and lowercased; an empty filter matches every item
+	 * @return whether this item's name contains the filter, ignoring case
+	 */
+	public boolean nameMatches(String filter)
+	{
+		return filter.isEmpty() || name.toLowerCase(Locale.ROOT).contains(filter);
 	}
 
 	@Override

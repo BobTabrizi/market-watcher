@@ -90,13 +90,19 @@ public class MarketWatcherTabPanel extends JPanel
 		UNCOLLAPSED_HOVER_ICON = new ImageIcon(ImageUtil.alphaOffset(uncollapsedImage, 0.53f));
 	}
 
-	MarketWatcherTabPanel(MarketWatcherPlugin plugin, MarketWatcherPluginPanel panel, MarketWatcherTab tab)
+	/**
+	 * @param filter watchlist search text, already trimmed and lowercased; empty when not searching.
+	 *               While searching, the tab is shown open without changing its saved collapsed state.
+	 *               If the tab's name matches it shows all its items, otherwise only its matching items.
+	 */
+	MarketWatcherTabPanel(MarketWatcherPlugin plugin, MarketWatcherPluginPanel panel, MarketWatcherTab tab, String filter)
 	{
 		setLayout(new BorderLayout(5, 0));
 		setBorder(new EmptyBorder(5, 5, 5, 0));
 		setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
-		this.collapsed = tab.isCollapsed();
+		final boolean filtering = !filter.isEmpty();
+		this.collapsed = tab.isCollapsed() && !filtering;
 
 		// Top Panel
 		JPanel topPanel = new JPanel(new BorderLayout());
@@ -151,12 +157,20 @@ public class MarketWatcherTabPanel extends JPanel
 		else
 		{
 			collapseButton.setIcon(UNCOLLAPSED_ICON);
+			if (filtering)
+			{
+				collapseButton.setToolTipText("Clear the search to collapse this tab");
+			}
 			collapseButton.addMouseListener(new MouseAdapter()
 			{
 				@Override
 				public void mouseReleased(MouseEvent e)
 				{
-					plugin.switchTabCollapse(tab);
+					// While searching the tab is held open, so collapsing would have no visible effect
+					if (!filtering)
+					{
+						plugin.switchTabCollapse(tab);
+					}
 				}
 
 				@Override
@@ -292,9 +306,17 @@ public class MarketWatcherTabPanel extends JPanel
 			itemsPanel.setBorder(new EmptyBorder(5, 5, 0, 5));
 			itemsPanel.setOpaque(false);
 
+			// A tab found by its name shows all its items (this is also the case when not searching)
+			final boolean showAllItems = tab.nameMatches(filter);
+
 			int index = 0;
 			for (MarketWatcherItem item : tab.getItems())
 			{
+				if (!showAllItems && !item.nameMatches(filter))
+				{
+					continue;
+				}
+
 				MarketWatcherTabItemPanel itemPanel = new MarketWatcherTabItemPanel(plugin, tab, item);
 
 				if (index++ > 0)

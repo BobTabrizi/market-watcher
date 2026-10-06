@@ -52,6 +52,8 @@ import javax.swing.ImageIcon;
 import javax.inject.Inject;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -61,6 +63,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class MarketWatcherPluginPanel extends PluginPanel
 {
@@ -86,6 +89,8 @@ public class MarketWatcherPluginPanel extends PluginPanel
 	private static final String CONTAINS_ITEM_MESSAGE = "This item is already being tracked.";
 	private static final String SEARCH_ERROR = "No results found.";
 	private static final String SEARCH_ERROR_MESSAGE = "No items were found with that name, please try again.";
+	private static final String FILTER_TOOLTIP = "Search your tracked items";
+	private static final String NO_FILTER_MATCHES = "No tracked items match your search.";
 	private static final String CANCEL = "Cancel";
 	private static final ImageIcon INFO_ICON;
 	private static final ImageIcon INFO_HOVER_ICON;
@@ -111,6 +116,7 @@ public class MarketWatcherPluginPanel extends PluginPanel
 	private final JPanel searchResultsPanel = new JPanel();
 	private final JPanel marketWatcherItemsPanel = new JPanel();
 	private final IconTextField searchBar = new IconTextField();
+	private final IconTextField filterBar = new IconTextField();
 	private final PluginErrorPanel searchErrorPanel = new PluginErrorPanel();
 	private final GridBagConstraints constraints = new GridBagConstraints();
 	private final JLabel title = new JLabel();
@@ -282,7 +288,35 @@ public class MarketWatcherPluginPanel extends PluginPanel
 		marketWrapper.getVerticalScrollBar().setPreferredSize(new Dimension(12, 0));
 		marketWrapper.getVerticalScrollBar().setBorder(new EmptyBorder(5, 5, 0, 0));
 
+		// Watchlist search, which filters tracked items as you type
+		filterBar.setIcon(IconTextField.Icon.SEARCH);
+		filterBar.setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH - 15, 30));
+		filterBar.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		filterBar.setHoverBackgroundColor(ColorScheme.DARK_GRAY_HOVER_COLOR);
+		filterBar.setToolTipText(FILTER_TOOLTIP);
+		filterBar.getDocument().addDocumentListener(new DocumentListener()
+		{
+			@Override
+			public void insertUpdate(DocumentEvent e)
+			{
+				updateMarketWatchPanel();
+			}
+
+			@Override
+			public void removeUpdate(DocumentEvent e)
+			{
+				updateMarketWatchPanel();
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e)
+			{
+				updateMarketWatchPanel();
+			}
+		});
+
 		// Market Watch Panel
+		marketWatcherPanel.add(filterBar, BorderLayout.NORTH);
 		marketWatcherPanel.add(marketWrapper, BorderLayout.CENTER);
 
 		// Search Results Panel
@@ -452,11 +486,17 @@ public class MarketWatcherPluginPanel extends PluginPanel
 		constraints.gridy++;
 
 		int index = 0;
+		final String filter = filterBar.getText().trim().toLowerCase(Locale.ROOT);
 
-		// Tabs
+		// Tabs, hidden while searching unless the tab's name or one of its items matches
 		for (MarketWatcherTab tab : plugin.getTabs())
 		{
-			MarketWatcherTabPanel panel = new MarketWatcherTabPanel(plugin, this, tab);
+			if (!tab.nameMatches(filter) && tab.getItems().stream().noneMatch(item -> item.nameMatches(filter)))
+			{
+				continue;
+			}
+
+			MarketWatcherTabPanel panel = new MarketWatcherTabPanel(plugin, this, tab, filter);
 
 			if (index++ > 0)
 			{
@@ -473,6 +513,11 @@ public class MarketWatcherPluginPanel extends PluginPanel
 		// Individual items
 		for (MarketWatcherItem item : plugin.getItems())
 		{
+			if (!item.nameMatches(filter))
+			{
+				continue;
+			}
+
 			MarketWatcherItemPanel panel = new MarketWatcherItemPanel(plugin, item);
 
 			if (index++ > 0)
@@ -487,7 +532,18 @@ public class MarketWatcherPluginPanel extends PluginPanel
 			constraints.gridy++;
 		}
 
+		if (index == 0 && !filter.isEmpty())
+		{
+			JLabel noMatches = new JLabel(NO_FILTER_MATCHES);
+			noMatches.setForeground(Color.GRAY);
+			noMatches.setHorizontalAlignment(SwingConstants.CENTER);
+			noMatches.setBorder(new EmptyBorder(10, 0, 0, 0));
+			marketWatcherItemsPanel.add(noMatches, constraints);
+			constraints.gridy++;
+		}
+
 		validate();
+		repaint();
 	}
 
 	public void containsItemWarning()

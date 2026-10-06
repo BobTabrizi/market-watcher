@@ -24,58 +24,36 @@
  */
 package com.marketwatcher.data;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.Collections;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
-import java.util.List;
-import java.util.Locale;
-
-@AllArgsConstructor
-public class MarketWatcherTab
+public class MarketWatcherItemTest
 {
-	@Getter
-	@Setter
-	private String name;
-
-	@Getter
-	@Setter
-	private boolean collapsed;
-
-	@Getter
-	private final List<MarketWatcherItem> items;
-
-	public MarketWatcherTab(String name, List<MarketWatcherItem> items)
+	private static MarketWatcherItem item(String name)
 	{
-		this.name = name;
-		collapsed = false;
-		this.items = items;
+		return new MarketWatcherItem(null, name, 1, 0, Collections.emptyList());
 	}
 
-	/**
-	 * @param filter search text, already trimmed and lowercased; an empty filter matches every tab
-	 * @return whether this tab's name contains the filter, ignoring case
-	 */
-	public boolean nameMatches(String filter)
+	@Test
+	public void emptyFilterMatchesEverything()
 	{
-		return filter.isEmpty() || name.toLowerCase(Locale.ROOT).contains(filter);
+		assertTrue(item("Abyssal whip").nameMatches(""));
 	}
 
-	@Override
-	public boolean equals(Object obj)
+	@Test
+	public void matchesAnyPartOfNameIgnoringCase()
 	{
-		if (!(obj instanceof MarketWatcherTab))
-		{
-			return false;
-		}
-
-		final MarketWatcherTab tab = (MarketWatcherTab) obj;
-		return tab.getName().equals(this.name);
+		MarketWatcherItem whip = item("Abyssal whip");
+		assertTrue(whip.nameMatches("whip"));
+		assertTrue(whip.nameMatches("abyss"));
+		assertTrue(whip.nameMatches("sal wh"));
 	}
 
-	@Override
-	public int hashCode()
+	@Test
+	public void rejectsNonMatchingFilter()
 	{
-		return name.hashCode();
+		assertFalse(item("Abyssal whip").nameMatches("bow"));
 	}
 }
