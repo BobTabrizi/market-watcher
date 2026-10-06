@@ -40,13 +40,20 @@ public class PeriodPrices
 
 	/**
 	 * Builds period prices from the wiki's 6h averages, where 0 means no trades in that window.
+	 * Averages are rounded to the nearest gp with halves rounded up.
 	 */
-	public static PeriodPrices fromWikiAverages(long avgLowPrice, long avgHighPrice)
+	public static PeriodPrices fromWikiAverages(double avgLowPrice, double avgHighPrice)
 	{
 		// Prices are longs because wiki averages can exceed Integer.MAX_VALUE
-		Long low = avgLowPrice > 0 ? avgLowPrice : null;
-		Long high = avgHighPrice > 0 ? avgHighPrice : null;
+		Long low = toWholeGp(avgLowPrice);
+		Long high = toWholeGp(avgHighPrice);
 		Long med = low != null && high != null ? (low + high) / 2 : null;
 		return new PeriodPrices(low, med, high);
+	}
+
+	private static Long toWholeGp(double averagePrice)
+	{
+		long rounded = Math.round(averagePrice);
+		return rounded > 0 ? rounded : null;
 	}
 }

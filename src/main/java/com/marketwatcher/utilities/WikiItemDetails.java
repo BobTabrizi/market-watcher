@@ -30,8 +30,9 @@ import lombok.Data;
 @Data
 public class WikiItemDetails
 {
-	long avgHighPrice;
+	// Average prices can have up to two decimal places. A missing (null) price is left as 0.
+	double avgHighPrice;
 	long highPriceVolume;
-	long avgLowPrice;
+	double avgLowPrice;
 	long lowPriceVolume;
 }

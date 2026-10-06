@@ -40,6 +40,18 @@ public class PeriodPricesTest
 	}
 
 	@Test
+	public void roundsDecimalAveragesHalfUp()
+	{
+		// The v2 API returns averages with up to two decimals; v1 returned them rounded half up
+		PeriodPrices prices = PeriodPrices.fromWikiAverages(807703.12, 825682.74);
+		assertEquals(Long.valueOf(807703), prices.getLow());
+		assertEquals(Long.valueOf(825683), prices.getHigh());
+		assertEquals(Long.valueOf(816693), prices.getMed());
+
+		assertEquals(Long.valueOf(11095), PeriodPrices.fromWikiAverages(11094.5, 11094.5).getLow());
+	}
+
+	@Test
 	public void treatsZeroAsUnavailable()
 	{
 		PeriodPrices prices = PeriodPrices.fromWikiAverages(0, 500);

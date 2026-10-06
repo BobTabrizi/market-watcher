@@ -55,7 +55,7 @@ public final class Constants
 
 	public static final String GP = " gp";
 
-	public static final String OSRS_WIKI_PRICES_6H_REQUEST_URL = "https://prices.runescape.wiki/api/v1/osrs/6h?timestamp=";
+	public static final String OSRS_WIKI_PRICES_6H_REQUEST_URL = "https://prices.runescape.wiki/api/v2/osrs/6h?timestamp=";
 
 	public static final String OSRS_WIKI_ITEM_REQUEST_BASE_URL = "https://prices.runescape.wiki/osrs/item/";
 

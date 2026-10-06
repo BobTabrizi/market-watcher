@@ -639,26 +639,22 @@ public class MarketWatcherPluginPanel extends PluginPanel
 		refreshStatus.setText(text);
 		refreshStatus.setForeground(failed && !refreshing ? ColorScheme.PROGRESS_ERROR_COLOR : ColorScheme.LIGHT_GRAY_COLOR);
 
-		final StringBuilder tooltip = new StringBuilder("<html>");
+		final List<String> tooltipLines = new ArrayList<>();
 		if (lastRefresh > 0)
 		{
-			tooltip.append("Prices last updated at ").append(formatClockTime(lastRefresh)).append('.');
+			tooltipLines.add("Prices last updated at " + formatClockTime(lastRefresh) + ".");
 		}
 		if (failed && !refreshing)
 		{
-			tooltip.append(lastRefresh > 0
-				? "<br>The last update failed, so some prices may be out of date."
+			tooltipLines.add(lastRefresh > 0
+				? "The last update failed, so some prices may be out of date."
 				: "Prices couldn't be loaded from the OSRS Wiki.");
 		}
-		tooltip.append(tooltip.length() > "<html>".length() ? "<br>" : "")
-			.append("Prices refresh automatically every ").append(plugin.getConfig().refreshInterval()).append(" hours.");
 		if (untilNextAuto >= 0)
 		{
-			tooltip.append("<br>Next refresh in ").append(TimeFormat.formatUntil(untilNextAuto))
-				.append(", at ").append(formatClockTime(now + untilNextAuto)).append('.');
+			tooltipLines.add("Next refresh in " + TimeFormat.formatUntil(untilNextAuto) + ", at " + formatClockTime(now + untilNextAuto) + ".");
 		}
-		tooltip.append("</html>");
-		refreshStatus.setToolTipText(tooltip.toString());
+		refreshStatus.setToolTipText(tooltipLines.isEmpty() ? null : "<html>" + String.join("<br>", tooltipLines) + "</html>");
 
 		updateRefreshButton();
 	}
