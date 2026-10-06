@@ -41,6 +41,7 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.GridBagConstraints;
@@ -115,8 +116,8 @@ public class MarketWatcherTabPanel extends JPanel
 		// Tab Name
 		JLabel tabName = new JLabel();
 		tabName.setForeground(Color.WHITE);
-		tabName.setBorder(new EmptyBorder(0, 5, 0, 0));
-		tabName.setPreferredSize(new Dimension(120, 0));
+		tabName.setBorder(new EmptyBorder(0, 8, 0, 0));
+		tabName.setPreferredSize(new Dimension(123, 0));
 		tabName.setText(tab.getName());
 		tabName.setToolTipText((tab.getName()));
 
@@ -124,73 +125,59 @@ public class MarketWatcherTabPanel extends JPanel
 		JLabel collapseButton = new JLabel();
 		collapseButton.setOpaque(false);
 
-		if (collapsed)
+		final ImageIcon toggleIcon = collapsed ? COLLAPSED_ICON : UNCOLLAPSED_ICON;
+		final ImageIcon toggleHoverIcon = collapsed ? COLLAPSED_HOVER_ICON : UNCOLLAPSED_HOVER_ICON;
+		// While searching the tab is held open, so collapsing would have no visible effect
+		final boolean canToggle = !filtering;
+
+		collapseButton.setIcon(toggleIcon);
+		if (!canToggle)
 		{
-			collapseButton.setIcon(COLLAPSED_ICON);
-			collapseButton.addMouseListener(new MouseAdapter()
+			collapseButton.setToolTipText("Clear the search to collapse this tab");
+		}
+
+		// The arrow and the tab name both toggle the tab, and hovering either highlights the arrow
+		MouseAdapter toggleListener = new MouseAdapter()
+		{
+			@Override
+			public void mouseReleased(MouseEvent e)
 			{
-				@Override
-				public void mouseReleased(MouseEvent e)
+				if (canToggle)
 				{
 					plugin.switchTabCollapse(tab);
 				}
+			}
 
-				@Override
-				public void mouseEntered(MouseEvent e)
-				{
-					collapseButton.setIcon(COLLAPSED_HOVER_ICON);
-				}
+			@Override
+			public void mouseEntered(MouseEvent e)
+			{
+				collapseButton.setIcon(toggleHoverIcon);
+			}
 
-				@Override
-				public void mouseExited(MouseEvent e)
-				{
-					collapseButton.setIcon(COLLAPSED_ICON);
-				}
-			});
+			@Override
+			public void mouseExited(MouseEvent e)
+			{
+				collapseButton.setIcon(toggleIcon);
+			}
+		};
+		collapseButton.addMouseListener(toggleListener);
+		tabName.addMouseListener(toggleListener);
+		if (canToggle)
+		{
+			collapseButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			tabName.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		}
 
-			leftActions.add(tabName, BorderLayout.EAST);
-			leftActions.add(collapseButton, BorderLayout.WEST);
-			topPanel.add(leftActions, BorderLayout.WEST);
+		leftActions.add(tabName, BorderLayout.EAST);
+		leftActions.add(collapseButton, BorderLayout.WEST);
+		topPanel.add(leftActions, BorderLayout.WEST);
 
+		if (collapsed)
+		{
 			add(topPanel, BorderLayout.CENTER);
 		}
 		else
 		{
-			collapseButton.setIcon(UNCOLLAPSED_ICON);
-			if (filtering)
-			{
-				collapseButton.setToolTipText("Clear the search to collapse this tab");
-			}
-			collapseButton.addMouseListener(new MouseAdapter()
-			{
-				@Override
-				public void mouseReleased(MouseEvent e)
-				{
-					// While searching the tab is held open, so collapsing would have no visible effect
-					if (!filtering)
-					{
-						plugin.switchTabCollapse(tab);
-					}
-				}
-
-				@Override
-				public void mouseEntered(MouseEvent e)
-				{
-					collapseButton.setIcon(UNCOLLAPSED_HOVER_ICON);
-				}
-
-				@Override
-				public void mouseExited(MouseEvent e)
-				{
-					collapseButton.setIcon(UNCOLLAPSED_ICON);
-				}
-			});
-
-			leftActions.add(tabName, BorderLayout.EAST);
-			leftActions.add(collapseButton, BorderLayout.WEST);
-
-			topPanel.add(leftActions, BorderLayout.WEST);
-
 			// Actions Panel
 			JPanel rightActions = new JPanel(new BorderLayout());
 			rightActions.setBorder(new EmptyBorder(0, 0, 0, 5));
